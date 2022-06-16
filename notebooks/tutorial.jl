@@ -8,10 +8,10 @@ using InteractiveUtils
 using Pkg; Pkg.activate("..")
 
 # ╔═╡ 91f620a0-380a-4da8-844f-2989ef507a66
-using Revise, Graphs, LuxorGraphPlot, PlutoUI
+using Graphs, LuxorGraphPlot
 
 # ╔═╡ 11e91f82-a10e-4d7a-a9f4-93b87a317177
-TableOfContents(depth=1)
+using PlutoUI; TableOfContents(depth=1)
 
 # ╔═╡ b4315259-a737-410a-b48b-b16882292866
 md"# Show a graph"
@@ -106,8 +106,8 @@ md"# API references"
 
 # ╔═╡ Cell order:
 # ╠═8b7e7fac-edb1-11ec-0a14-3d07cf4570c9
+# ╟─11e91f82-a10e-4d7a-a9f4-93b87a317177
 # ╠═91f620a0-380a-4da8-844f-2989ef507a66
-# ╠═11e91f82-a10e-4d7a-a9f4-93b87a317177
 # ╟─b4315259-a737-410a-b48b-b16882292866
 # ╟─2025bc1a-7ba2-49d1-bad6-60372f476676
 # ╠═0693c4ee-5fef-416b-a560-09d19872091b

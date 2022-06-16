@@ -149,6 +149,7 @@ function show_graph(f, graph::SimpleGraph;
     show_graph(f, locs, [(e.src, e.dst) for e in edges(graph)]; kwargs...)
 end
 show_graph(graph::SimpleGraph; kwargs...) = show_graph(()->nothing, graph; kwargs...)
+show_graph(locations::AbstractVector, edges; kwargs...) = show_graph(()->nothing, locations, edges; kwargs...)
 
 function autolocs(graph, locs, spring, optimal_distance, spring_mask)
     if spring
@@ -425,5 +426,6 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         f()
     end
 end
+show_gallery(locations::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locations, edges, grid; kwargs...)
 
 end
