@@ -5,6 +5,9 @@ It is the [`Luxor`](https://github.com/JuliaGraphics/Luxor.jl) version of [`Grap
 
 Install by typing `using Pkg; Pkg.add("LuxorGraphPlot")` in a julia REPL.
 
+(NOTE: After implementing this package, I noticed there is a similar package with more features: https://github.com/cormullion/Karnak.jl.
+`LuxorGraphPlot` is light weighted version targeting combinatorial optimization and lattice plots.)
+
 ## Example
 Please check [this notebook]().
 
