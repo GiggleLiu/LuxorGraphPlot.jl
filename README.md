@@ -9,7 +9,7 @@ Install by typing `using Pkg; Pkg.add("LuxorGraphPlot")` in a julia REPL.
 `LuxorGraphPlot` is light weighted version targeting combinatorial optimization and lattice plots.)
 
 ## Example
-Please check [this notebook]().
+Please check [this notebook](https://giggleliu.github.io/LuxorGraphPlot.jl/notebooks/tutorial.html).
 
 In a notebook or IDE with graphical display, use the following statements to show your graph.
 

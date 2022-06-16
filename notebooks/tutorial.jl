@@ -5,13 +5,13 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 8b7e7fac-edb1-11ec-0a14-3d07cf4570c9
-using Pkg; Pkg.activate("..")
-
-# ╔═╡ 91f620a0-380a-4da8-844f-2989ef507a66
-using Graphs, LuxorGraphPlot
+using Pkg; Pkg.activate(".."); Pkg.instantiate()
 
 # ╔═╡ 11e91f82-a10e-4d7a-a9f4-93b87a317177
 using PlutoUI; TableOfContents(depth=1)
+
+# ╔═╡ 91f620a0-380a-4da8-844f-2989ef507a66
+using Graphs, LuxorGraphPlot
 
 # ╔═╡ b4315259-a737-410a-b48b-b16882292866
 md"# Show a graph"
