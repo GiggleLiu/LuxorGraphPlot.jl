@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.8
+# v0.19.9
 
 using Markdown
 using InteractiveUtils
@@ -40,7 +40,7 @@ let
 end
 
 # ╔═╡ 60f073fb-6c20-4207-be27-7eef730b3833
-md"specify colors and sizes"
+md"specify colors, shapes and sizes"
 
 # ╔═╡ 8d3a74c1-1ad2-458a-8078-bb81d48f1783
 show_graph(graph;
@@ -49,6 +49,7 @@ show_graph(graph;
 	vertex_stroke_colors=rand(["blue", "red"], 10),
 	vertex_text_colors=rand(["white", "black"], 10),
 	edge_colors=rand(["blue", "red"], 15),
+	vertex_shapes=rand(["circle", "box"], 10)
 )
 
 # ╔═╡ d51dd930-28d0-45a3-92e1-e46bcc073d72
