@@ -348,7 +348,7 @@ Keyword arguments
 * `spring_mask` specfies which location is optimizable for `spring` optimizer.
 
 * `vertex_color` is a dictionary that specifies the vertex configuration - color map.
-* `vertex_configs` is an iterator of bit strings for specifying vertex configurations, e.g. a [`ConfigEnumerator`](@ref) instance. It will be rendered as vertex colors.
+* `vertex_configs` is an iterator of bit strings for specifying vertex configurations. It will be rendered as vertex colors.
 * `edge_color` is a dictionary that specifies the edge configuration - color map.
 * `edge_configs` is an iterator of bit strings for specifying edge configurations. It will be rendered as edge colors.
 
