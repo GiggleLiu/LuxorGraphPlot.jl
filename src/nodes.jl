@@ -53,10 +53,17 @@ function boundary(n::Node, angle::Real)
     intersectlinepoly(n.loc, Point(x, y), n.path)[1]
 end
 
-function edge(::typeof(line), a::Node, b::Node, action=:path)
+function edge(f, a::Node, b::Node, action=:path)
     a_ = get_connect_point(a, b)
     b_ = get_connect_point(b, a)
-    line(a_, b_, action)
+    edge(f, a_, b_, action)
+end
+function edge(::typeof(line), a::Point, b::Point, action=:path)
+    line(a, b, action)
+end
+function edge(::typeof(arrow), a::Point, b::Point, action=:path; kwargs...)
+    arrow(a, b; kwargs...)
+    do_action(action)
 end
 
 function get_connect_point(a::Node, b::Node; mode=:exact)
