@@ -9,7 +9,7 @@ using InteractiveUtils
 using Pkg; Pkg.activate(".."); Pkg.instantiate()
 
 # ╔═╡ 11e91f82-a10e-4d7a-a9f4-93b87a317177
-using PlutoUI; TableOfContents(depth=1)
+using Revise, PlutoUI; TableOfContents(depth=1)
 
 # ╔═╡ 91f620a0-380a-4da8-844f-2989ef507a66
 using Graphs, LuxorGraphPlot
@@ -85,7 +85,7 @@ md"One can use a boolean vector to represent boolean variables on a vertex or an
 # ╔═╡ 793d4df0-50a8-40f9-bad0-bc9f2632f5e4
 show_gallery(smallgraph(:petersen), (2, 3); format=:png,
 	vertex_configs=[rand(Bool, 10) for k=1:6],
-	edge_configs=[rand(Bool, 15) for k=1:6], pad=0.5)
+	edge_configs=[rand(Bool, 15) for k=1:6], xpad=0.5, ypad=0.5)
 
 # ╔═╡ c0612439-8a0b-4568-8011-387041423023
 md"for non-boolean configurations, you need to provide a map to colors."
@@ -93,9 +93,10 @@ md"for non-boolean configurations, you need to provide a map to colors."
 # ╔═╡ 8d587d56-657a-4430-b5a2-a7224c6d7665
 show_gallery(smallgraph(:petersen), (2, 3); format=:png,
 	vertex_configs=[rand(1:2, 10) for k=1:6],
-	edge_configs=[rand(1:2, 15) for k=1:6], pad=0.5, 
+	edge_configs=[rand(1:2, 15) for k=1:6], xpad=0.5, ypad=0.5, 
 	vertex_color=Dict(1=>"white", 2=>"blue"),
-	edge_color=Dict(1=>"black", 2=>"cyan"))
+	edge_color=Dict(1=>"black", 2=>"cyan"),
+	edge_line_style="dashed")
 
 # ╔═╡ 7e6b731b-2845-4933-bf58-555046123457
 md"# API references"
@@ -107,7 +108,7 @@ md"# API references"
 @doc show_gallery
 
 # ╔═╡ Cell order:
-# ╠═8b7e7fac-edb1-11ec-0a14-3d07cf4570c9
+# ╟─8b7e7fac-edb1-11ec-0a14-3d07cf4570c9
 # ╟─11e91f82-a10e-4d7a-a9f4-93b87a317177
 # ╠═91f620a0-380a-4da8-844f-2989ef507a66
 # ╟─b4315259-a737-410a-b48b-b16882292866
