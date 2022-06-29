@@ -135,7 +135,7 @@ function show_graph(f, locations, edges;
     if length(locations) == 0
         _draw(f, 100, 100; format, filename)
     else
-        config = GraphDisplayConfig(; config_canvas(locations, xpad, ypad)..., kwargs...)
+        config = GraphDisplayConfig(; xpad, ypad, config_canvas(locations, xpad, ypad)..., kwargs...)
         Dx, Dy = (config.xspan+2*config.xpad)*config.unit, (config.yspan+2*config.ypad)*config.unit
         _draw(Dx, Dy; format, filename) do
             _show_graph(map(loc->(loc[1]+config.offsetx, loc[2]+config.offsety), locations), edges,
@@ -415,7 +415,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         xpad=1.0,
         ypad=1.0,
         kwargs...)
-    config = GraphDisplayConfig(; config_canvas(locs, xpad, ypad)..., kwargs...)
+    config = GraphDisplayConfig(; xpad, ypad, config_canvas(locs, xpad, ypad)..., kwargs...)
     m, n = grid
     nv, ne = length(locs), length(edges)
     dx = (config.xspan+2*config.xpad)*config.unit
