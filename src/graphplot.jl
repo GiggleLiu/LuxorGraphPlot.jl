@@ -2,7 +2,8 @@ const CONFIGHELP = """
 Extra keyword arguments
 -------------------------------
 * general
-    * `pad::Float64 = 1.0`, the padding space
+    * `xpad::Float64 = 1.0`, the padding space in x direction
+    * `ypad::Float64 = 1.0`, the padding space in y direction
     * `unit::Float64 = 60`, the unit distance as the number of pixels
     * `offsetx::Float64 = 0.0`, the origin of x axis
     * `offsety::Float64 = 0.0`, the origin of y axis
@@ -16,13 +17,19 @@ Extra keyword arguments
     * `vertex_size::Float64 = 0.15`, the default vertex size
     * `vertex_shape::String = "circle"`, the default vertex shape, which can be "circle" or "box"
     * `vertex_line_width::Float64 = 1`, the default vertex stroke line width
+    * `vertex_fill_opacity::Float64 = 1.0`, the opacity of vertex fill
+    * `vertex_stroke_opacity::Float64 = 1.0`, the opacity of vertex stroke
+    * `vertex_line_style::String = "solid"`, the line style of vertex stroke, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 * edge
     * `edge_color::String = "black"`, the default edge color
     * `edge_line_width::Float64 = 1`, the default line width
+    * `edge_opacity::Float64 = 1.0`, the opacity of edges
+    * `edge_style::String = "solid"`, the line style of edges, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 """
 Base.@kwdef struct GraphDisplayConfig
     # line, vertex and text
-    pad::Float64 = 1.0
+    xpad::Float64 = 1.0
+    ypad::Float64 = 1.0
     unit::Int = 60   # how many pixels as unit?
     offsetx::Float64 = 0.0  # the zero of x axis
     offsety::Float64 = 0.0  # the zero of y axis
@@ -37,12 +44,17 @@ Base.@kwdef struct GraphDisplayConfig
     vertex_size::Float64 = 0.15
     vertex_shape::String = "circle"
     vertex_line_width::Float64 = 1  # in pt
+    vertex_fill_opacity::Float64 = 1.0
+    vertex_stroke_opacity::Float64 = 1.0
+    vertex_line_style::String = "solid"
     # edge
     edge_color::String = "black"
+    edge_opacity::Float64 = 1.0
     edge_line_width::Float64 = 1  # in pt
+    edge_line_style::String = "solid"
 end
 
-function autoconfig(locations; pad, kwargs...)
+function config_canvas(locations, xpad, ypad)
     n = length(locations)
     if n >= 1
         # compute the size and the margin
@@ -52,15 +64,15 @@ function autoconfig(locations; pad, kwargs...)
         ymax = maximum(x->x[2], locations)
         xspan = xmax - xmin
         yspan = ymax - ymin
-        offsetx = -xmin + pad
-        offsety = -ymin + pad
+        offsetx = -xmin + xpad
+        offsety = -ymin + ypad
     else
         xspan = 0.0
         yspan = 0.0
         offsetx = 0.0
         offsety = 0.0
     end
-    return GraphDisplayConfig(; pad, offsetx, offsety, xspan, yspan, kwargs...)
+    return (; offsetx, offsety, xspan, yspan)
 end
 
 """
@@ -123,13 +135,14 @@ function show_graph(f, locations, edges;
         edge_colors=nothing,
         texts = nothing,
         format=:png, filename=nothing,
-        pad=1.0,
+        xpad=1.0,
+        ypad=1.0,
         kwargs...)
     if length(locations) == 0
         _draw(f, 100, 100; format, filename)
     else
-        config = autoconfig(locations; pad, kwargs...)
-        Dx, Dy = (config.xspan+2*config.pad)*config.unit, (config.yspan+2*config.pad)*config.unit
+        config = GraphDisplayConfig(; config_canvas(locations, xpad, ypad)..., kwargs...)
+        Dx, Dy = (config.xspan+2*config.xpad)*config.unit, (config.yspan+2*config.ypad)*config.unit
         _draw(Dx, Dy; format, filename) do
             _show_graph(map(loc->(loc[1]+config.offsetx, loc[2]+config.offsety), locations), edges,
             vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
@@ -192,14 +205,17 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
         ri = _get(vertex_sizes, i, config.vertex_size)
         rj = _get(vertex_sizes, j, config.vertex_size)
         draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
-            line_width=config.edge_line_width)
+            line_width=config.edge_line_width, opacity=config.edge_opacity,
+            line_style=config.edge_line_style,
+        )
     end
     # vertices
     for (i, node) in enumerate(nodes)
         draw_vertex(node; fill_color=_get(vertex_colors, i, config.vertex_fill_color),
             stroke_color=_get(vertex_stroke_colors, i, config.vertex_stroke_color),
-            line_width=config.vertex_line_width)
-        draw_text(node, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/60,
+            line_width=config.vertex_line_width, stroke_opacity=config.vertex_stroke_opacity,
+            fill_opacity=config.vertex_fill_opacity, line_style=config.vertex_line_style)
+        draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/60,
             color=_get(vertex_text_colors, i, config.vertex_text_color))
     end
 end
@@ -215,21 +231,26 @@ function _node(shape::String, loc, size)
     end
 end
 
-function draw_text(node::Node, text; fontsize, color)
+function draw_text(loc, text; fontsize, color)
     Luxor.fontsize(fontsize)
-    setcolor(color)
-    Luxor.text(text, node.loc, valign=:middle, halign=:center)
+    sethue(color)
+    Luxor.text(text, loc, valign=:middle, halign=:center)
 end
-function draw_edge(a::Node, b::Node; color, line_width)
-    setcolor(color)
+function draw_edge(a::Union{Node,Point}, b::Union{Node,Point}; color, line_width, line_style, opacity)
+    sethue(color)
     setline(line_width)
+    setdash(line_style)
+    setopacity(opacity)
     edge(line, a, b, :stroke)
 end
-function draw_vertex(node; stroke_color, fill_color, line_width)
-    setcolor(fill_color)
+function draw_vertex(node; stroke_color, fill_color, line_width, fill_opacity, stroke_opacity, line_style)
+    sethue(fill_color)
+    setopacity(fill_opacity)
     fill(node)
     setline(line_width)
-    setcolor(stroke_color)
+    sethue(stroke_color)
+    setopacity(stroke_opacity)
+    setdash(line_style)
     stroke(node)
 end
 
@@ -323,11 +344,16 @@ end
 
         vertex_configs=nothing,
         edge_configs=nothing,
+        vertex_color=nothing,
+        edge_color=nothing,
 
         vertex_sizes=nothing,
+        vertex_shapes=nothing,
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         texts=nothing,
+        xpad=1.0,
+        ypad=1.0,
         format=:png,
         filename=nothing,
         kwargs...)
@@ -347,16 +373,19 @@ Keyword arguments
 * `optimal_distance` is a optimal distance parameter for `spring` optimizer.
 * `spring_mask` specfies which location is optimizable for `spring` optimizer.
 
-* `vertex_color` is a dictionary that specifies the vertex configuration - color map.
 * `vertex_configs` is an iterator of bit strings for specifying vertex configurations. It will be rendered as vertex colors.
-* `edge_color` is a dictionary that specifies the edge configuration - color map.
 * `edge_configs` is an iterator of bit strings for specifying edge configurations. It will be rendered as edge colors.
+* `edge_color` is a dictionary that specifies the edge configuration - color map.
+* `vertex_color` is a dictionary that specifies the vertex configuration - color map.
 
 * `vertex_sizes` is a vector of real numbers for specifying vertex sizes.
 * `vertex_shapes` is a vector of strings for specifying vertex shapes, the string should be "circle" or "box".
 * `vertex_stroke_colors` is a vector of color strings for specifying vertex stroke colors.
 * `vertex_text_colors` is a vector of color strings for specifying vertex text colors.
 * `texts` is a vector of strings for labeling vertices.
+
+* `xpad` is the space between two adjacent plots in x direction.
+* `ypad` is the space between two adjacent plots in y direction.
 * `format` is the output format, which can be `:svg`, `:png` or `:pdf`.
 * `filename` is a string as the output filename.
 
@@ -392,13 +421,14 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         texts=nothing,
         format=:png,
         filename=nothing,
-        pad=1.0,
+        xpad=1.0,
+        ypad=1.0,
         kwargs...)
-    config = autoconfig(locs; pad, kwargs...)
+    config = GraphDisplayConfig(; config_canvas(locs, xpad, ypad)..., kwargs...)
     m, n = grid
     nv, ne = length(locs), length(edges)
-    dx = (config.xspan+2*config.pad)*config.unit
-    dy = (config.yspan+2*config.pad)*config.unit
+    dx = (config.xspan+2*config.xpad)*config.unit
+    dy = (config.yspan+2*config.ypad)*config.unit
     Dx, Dy = dx*n, dy*m
     locs = map(loc->(loc[1]+config.offsetx, loc[2]+config.offsety), locs)
     # default vertex and edge maps

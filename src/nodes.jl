@@ -58,6 +58,9 @@ function edge(::typeof(line), a::Node, b::Node, action=:path)
     b_ = get_connect_point(b, a)
     line(a_, b_, action)
 end
+function edge(::typeof(line), a::Point, b::Point, action=:path)
+    line(a, b, action)
+end
 
 function get_connect_point(a::Node, b::Node; mode=:exact)
     if a.shape == Circle
