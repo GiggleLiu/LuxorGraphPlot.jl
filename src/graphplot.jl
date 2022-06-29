@@ -11,19 +11,16 @@ Extra keyword arguments
     * `yspan::Float64 = 1.0`, the height of the graph/image
     * `fontsize::Float64 = 12`, the font size
 * vertex
-    * `vertex_text_color::String = "black"`, the default text color
+    * `vertex_text_color = "black"`, the default text color
     * `vertex_stroke_color = "black"`, the default stroke color for vertices
     * `vertex_fill_color = "transparent"`, the default default fill color for vertices
     * `vertex_size::Float64 = 0.15`, the default vertex size
     * `vertex_shape::String = "circle"`, the default vertex shape, which can be "circle" or "box"
     * `vertex_line_width::Float64 = 1`, the default vertex stroke line width
-    * `vertex_fill_opacity::Float64 = 1.0`, the opacity of vertex fill
-    * `vertex_stroke_opacity::Float64 = 1.0`, the opacity of vertex stroke
     * `vertex_line_style::String = "solid"`, the line style of vertex stroke, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 * edge
-    * `edge_color::String = "black"`, the default edge color
+    * `edge_color = "black"`, the default edge color
     * `edge_line_width::Float64 = 1`, the default line width
-    * `edge_opacity::Float64 = 1.0`, the opacity of edges
     * `edge_style::String = "solid"`, the line style of edges, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 """
 Base.@kwdef struct GraphDisplayConfig
@@ -38,18 +35,15 @@ Base.@kwdef struct GraphDisplayConfig
     fontsize::Float64 = 12
 
     # vertex
-    vertex_text_color::String = "black"
+    vertex_text_color = "black"
     vertex_stroke_color = "black"
     vertex_fill_color = "transparent"
     vertex_size::Float64 = 0.15
     vertex_shape::String = "circle"
     vertex_line_width::Float64 = 1  # in pt
-    vertex_fill_opacity::Float64 = 1.0
-    vertex_stroke_opacity::Float64 = 1.0
     vertex_line_style::String = "solid"
     # edge
-    edge_color::String = "black"
-    edge_opacity::Float64 = 1.0
+    edge_color = "black"
     edge_line_width::Float64 = 1  # in pt
     edge_line_style::String = "solid"
 end
@@ -205,7 +199,7 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
         ri = _get(vertex_sizes, i, config.vertex_size)
         rj = _get(vertex_sizes, j, config.vertex_size)
         draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
-            line_width=config.edge_line_width, opacity=config.edge_opacity,
+            line_width=config.edge_line_width,
             line_style=config.edge_line_style,
         )
     end
@@ -213,8 +207,8 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
     for (i, node) in enumerate(nodes)
         draw_vertex(node; fill_color=_get(vertex_colors, i, config.vertex_fill_color),
             stroke_color=_get(vertex_stroke_colors, i, config.vertex_stroke_color),
-            line_width=config.vertex_line_width, stroke_opacity=config.vertex_stroke_opacity,
-            fill_opacity=config.vertex_fill_opacity, line_style=config.vertex_line_style)
+            line_width=config.vertex_line_width,
+            line_style=config.vertex_line_style)
         draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/60,
             color=_get(vertex_text_colors, i, config.vertex_text_color))
     end
@@ -233,23 +227,20 @@ end
 
 function draw_text(loc, text; fontsize, color)
     Luxor.fontsize(fontsize)
-    sethue(color)
+    setcolor(color)
     Luxor.text(text, loc, valign=:middle, halign=:center)
 end
-function draw_edge(a::Union{Node,Point}, b::Union{Node,Point}; color, line_width, line_style, opacity)
-    sethue(color)
+function draw_edge(a::Union{Node,Point}, b::Union{Node,Point}; color, line_width, line_style, arrow=false, kwargs...)
+    setcolor(color)
     setline(line_width)
     setdash(line_style)
-    setopacity(opacity)
-    edge(line, a, b, :stroke)
+    edge(arrow ? Luxor.arrow : Luxor.line, a, b, :stroke; kwargs...)
 end
-function draw_vertex(node; stroke_color, fill_color, line_width, fill_opacity, stroke_opacity, line_style)
-    sethue(fill_color)
-    setopacity(fill_opacity)
+function draw_vertex(node; stroke_color, fill_color, line_width, line_style)
+    setcolor(fill_color)
     fill(node)
     setline(line_width)
-    sethue(stroke_color)
-    setopacity(stroke_opacity)
+    setcolor(stroke_color)
     setdash(line_style)
     stroke(node)
 end
