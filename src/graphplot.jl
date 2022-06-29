@@ -199,7 +199,7 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
         draw_vertex(node; fill_color=_get(vertex_colors, i, config.vertex_fill_color),
             stroke_color=_get(vertex_stroke_colors, i, config.vertex_stroke_color),
             line_width=config.vertex_line_width)
-        draw_text(node, _get(texts, i, "$i"); fontsize=config.fontsize,
+        draw_text(node, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/60,
             color=_get(vertex_text_colors, i, config.vertex_text_color))
     end
 end
