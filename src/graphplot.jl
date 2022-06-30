@@ -4,6 +4,8 @@ Extra keyword arguments
 * general
     * `xpad::Float64 = 1.0`, the padding space in x direction
     * `ypad::Float64 = 1.0`, the padding space in y direction
+    * `xpad_right::Float64 = 1.0`, the padding space in x direction (right side)
+    * `ypad_bottom::Float64 = 1.0`, the padding space in y direction (bottom side)
     * `unit::Float64 = 60`, the unit distance as the number of pixels
     * `fontsize::Float64 = 12`, the font size
 * vertex
@@ -23,6 +25,8 @@ Base.@kwdef struct GraphDisplayConfig
     # line, vertex and text
     xpad::Float64 = 1.0
     ypad::Float64 = 1.0
+    xpad_right::Float64 = 1.0
+    ypad_bottom::Float64 = 1.0
     unit::Int = 60   # how many pixels as unit?
     fontsize::Float64 = 12
 
@@ -111,12 +115,14 @@ function show_graph(f, locs, edges;
         format=:png, filename=nothing,
         xpad=1.0,
         ypad=1.0,
+        xpad_right=xpad,
+        ypad_bottom=ypad,
         kwargs...)
     length(locs) == 0 && return _draw(f, 100, 100; format, filename)
 
     xmin, ymin, xmax, ymax = get_bounding_box(locs)
-    config = GraphDisplayConfig(; xpad, ypad, kwargs...)
-    Dx, Dy = ((xmax-xmin)+2*config.xpad)*config.unit, ((xmax-xmin)+2*config.ypad)*config.unit
+    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
+    Dx, Dy = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit, ((xmax-xmin)+config.ypad+config.ypad_bottom)*config.unit
     transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
     _draw(Dx, Dy; format, filename) do
         _show_graph(transform.(locs), edges,
@@ -394,15 +400,17 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         filename=nothing,
         xpad=1.0,
         ypad=1.0,
+        xpad_right=xpad,
+        ypad_bottom=ypad,
         kwargs...)
     length(locs) == 0 && return _draw(f, 100, 100; format, filename)
 
     xmin, ymin, xmax, ymax = get_bounding_box(locs)
-    config = GraphDisplayConfig(; xpad, ypad, kwargs...)
+    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
     m, n = grid
     nv, ne = length(locs), length(edges)
-    dx = ((xmax-xmin)+2*config.xpad)*config.unit
-    dy = ((ymax-ymin)+2*config.ypad)*config.unit
+    dx = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit
+    dy = ((ymax-ymin)+config.ypad+config.xpad_right)*config.unit
     Dx, Dy = dx*n, dy*m
     transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
     locs = transform.(locs)

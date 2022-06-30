@@ -33,9 +33,9 @@ md"specify the layout and texts manually"
 let
 	rot15(a, b, i::Int) = cos(2i*π/5)*a + sin(2i*π/5)*b, cos(2i*π/5)*b - sin(2i*π/5)*a
 	locations = [[rot15(0.0, 1.0, i) for i=0:4]..., [rot15(0.0, 0.5, i) for i=0:4]...]
-	show_graph(graph; locs=locations, texts=[string('a'+i) for i=0:9], fontsize=8, xspan=5) do  # extra commands
-		LuxorGraphPlot.Luxor.fontsize(18)
-		LuxorGraphPlot.Luxor.text("haha, the fontsize is so small!", 200, 120.0)
+	show_graph(graph; locs=locations, texts=[string('a'+i) for i=0:9], fontsize=8, xpad_right=5) do  # extra commands
+		LuxorGraphPlot.Luxor.fontsize(22)
+		LuxorGraphPlot.Luxor.text("haha, the fontsize is so big!", 200, 120.0)
 	end
 end
 
