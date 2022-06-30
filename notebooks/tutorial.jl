@@ -9,7 +9,7 @@ using InteractiveUtils
 using Pkg; Pkg.activate(".."); Pkg.instantiate()
 
 # ╔═╡ 11e91f82-a10e-4d7a-a9f4-93b87a317177
-using Revise, PlutoUI; TableOfContents(depth=1)
+using PlutoUI; TableOfContents(depth=1)
 
 # ╔═╡ 91f620a0-380a-4da8-844f-2989ef507a66
 using Graphs, LuxorGraphPlot
