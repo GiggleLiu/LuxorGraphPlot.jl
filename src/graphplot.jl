@@ -402,7 +402,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
     m, n = grid
     nv, ne = length(locs), length(edges)
     dx = ((xmax-xmin)+2*config.xpad)*config.unit
-    dy = ((xmax-xmin)+2*config.ypad)*config.unit
+    dy = ((ymax-ymin)+2*config.ypad)*config.unit
     Dx, Dy = dx*n, dy*m
     transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
     locs = transform.(locs)
