@@ -6,7 +6,8 @@ Extra keyword arguments
     * `ypad::Float64 = 1.0`, the padding space in y direction
     * `xpad_right::Float64 = 1.0`, the padding space in x direction (right side)
     * `ypad_bottom::Float64 = 1.0`, the padding space in y direction (bottom side)
-    * `unit::Float64 = 60`, the unit distance as the number of pixels
+    * `background_color = "transparent"`, the background color
+    * `unit::Float64 = 50`, the unit distance as the number of pixels
     * `fontsize::Float64 = 12`, the font size
 * vertex
     * `vertex_text_color = "black"`, the default text color
@@ -27,7 +28,8 @@ Base.@kwdef struct GraphDisplayConfig
     ypad::Float64 = 1.0
     xpad_right::Float64 = 1.0
     ypad_bottom::Float64 = 1.0
-    unit::Int = 60   # how many pixels as unit?
+    background_color = "transparent"
+    unit::Int = 50   # how many pixels as unit?
     fontsize::Float64 = 12
 
     # vertex
@@ -66,7 +68,7 @@ end
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=:png,
+        format=:svg,
         filename=nothing,
         kwargs...)
 
@@ -112,7 +114,7 @@ function show_graph(f, locs, edges;
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=:png, filename=nothing,
+        format=:svg, filename=nothing,
         xpad=1.0,
         ypad=1.0,
         xpad_right=xpad,
@@ -122,9 +124,10 @@ function show_graph(f, locs, edges;
 
     xmin, ymin, xmax, ymax = get_bounding_box(locs)
     config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
-    Dx, Dy = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit, ((xmax-xmin)+config.ypad+config.ypad_bottom)*config.unit
+    Dx, Dy = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit, ((ymax-ymin)+config.ypad+config.ypad_bottom)*config.unit
     transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
     _draw(Dx, Dy; format, filename) do
+        background(config.background_color)
         _show_graph(transform.(locs), edges,
         vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
         f()
@@ -195,7 +198,7 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
             stroke_color=_get(vertex_stroke_colors, i, config.vertex_stroke_color),
             line_width=config.vertex_line_width,
             line_style=config.vertex_line_style)
-        draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/60,
+        draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/50,
             color=_get(vertex_text_colors, i, config.vertex_text_color))
     end
 end
@@ -331,7 +334,7 @@ end
         texts=nothing,
         xpad=1.0,
         ypad=1.0,
-        format=:png,
+        format=:svg,
         filename=nothing,
         kwargs...)
 
@@ -396,7 +399,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         texts=nothing,
-        format=:png,
+        format=:svg,
         filename=nothing,
         xpad=1.0,
         ypad=1.0,
@@ -423,6 +426,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
     end
 
     _draw(Dx, Dy; format, filename) do
+        background(config.background_color)
         for i=1:m
             for j=1:n
                 origin((j-1)*dx, (i-1)*dy)
