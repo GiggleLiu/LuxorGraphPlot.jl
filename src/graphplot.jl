@@ -5,10 +5,6 @@ Extra keyword arguments
     * `xpad::Float64 = 1.0`, the padding space in x direction
     * `ypad::Float64 = 1.0`, the padding space in y direction
     * `unit::Float64 = 60`, the unit distance as the number of pixels
-    * `offsetx::Float64 = 0.0`, the origin of x axis
-    * `offsety::Float64 = 0.0`, the origin of y axis
-    * `xspan::Float64 = 1.0`, the width of the graph/image
-    * `yspan::Float64 = 1.0`, the height of the graph/image
     * `fontsize::Float64 = 12`, the font size
 * vertex
     * `vertex_text_color = "black"`, the default text color
@@ -28,10 +24,6 @@ Base.@kwdef struct GraphDisplayConfig
     xpad::Float64 = 1.0
     ypad::Float64 = 1.0
     unit::Int = 60   # how many pixels as unit?
-    offsetx::Float64 = 0.0  # the zero of x axis
-    offsety::Float64 = 0.0  # the zero of y axis
-    xspan::Float64 = 1.0
-    yspan::Float64 = 1.0
     fontsize::Float64 = 12
 
     # vertex
@@ -48,25 +40,13 @@ Base.@kwdef struct GraphDisplayConfig
     edge_line_style::String = "solid"
 end
 
-function config_canvas(locations, xpad, ypad)
-    n = length(locations)
-    if n >= 1
-        # compute the size and the margin
-        xmin = minimum(x->x[1], locations)
-        ymin = minimum(x->x[2], locations)
-        xmax = maximum(x->x[1], locations)
-        ymax = maximum(x->x[2], locations)
-        xspan = xmax - xmin
-        yspan = ymax - ymin
-        offsetx = -xmin + xpad
-        offsety = -ymin + ypad
-    else
-        xspan = 0.0
-        yspan = 0.0
-        offsetx = 0.0
-        offsety = 0.0
-    end
-    return (; offsetx, offsety, xspan, yspan)
+function get_bounding_box(locs)
+    @assert length(locs) > 0
+    xmin = minimum(x->x[1], locs)
+    ymin = minimum(x->x[2], locs)
+    xmax = maximum(x->x[1], locs)
+    ymax = maximum(x->x[2], locs)
+    return (; xmin, ymin, xmax, ymax)
 end
 
 """
@@ -120,7 +100,7 @@ julia> using Graphs
 julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue", "red"], 10));
 ```
 """
-function show_graph(f, locations, edges;
+function show_graph(f, locs, edges;
         vertex_colors=nothing,
         vertex_sizes=nothing,
         vertex_shapes=nothing,
@@ -132,16 +112,16 @@ function show_graph(f, locations, edges;
         xpad=1.0,
         ypad=1.0,
         kwargs...)
-    if length(locations) == 0
-        _draw(f, 100, 100; format, filename)
-    else
-        config = GraphDisplayConfig(; xpad, ypad, config_canvas(locations, xpad, ypad)..., kwargs...)
-        Dx, Dy = (config.xspan+2*config.xpad)*config.unit, (config.yspan+2*config.ypad)*config.unit
-        _draw(Dx, Dy; format, filename) do
-            _show_graph(map(loc->(loc[1]+config.offsetx, loc[2]+config.offsety), locations), edges,
-            vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
-            f()
-        end
+    length(locs) == 0 && return _draw(f, 100, 100; format, filename)
+
+    xmin, ymin, xmax, ymax = get_bounding_box(locs)
+    config = GraphDisplayConfig(; xpad, ypad, kwargs...)
+    Dx, Dy = ((xmax-xmin)+2*config.xpad)*config.unit, ((xmax-xmin)+2*config.ypad)*config.unit
+    transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
+    _draw(Dx, Dy; format, filename) do
+        _show_graph(transform.(locs), edges,
+        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
+        f()
     end
 end
 
@@ -156,7 +136,7 @@ function show_graph(f, graph::SimpleGraph;
     show_graph(f, locs, [(e.src, e.dst) for e in edges(graph)]; kwargs...)
 end
 show_graph(graph::SimpleGraph; kwargs...) = show_graph(()->nothing, graph; kwargs...)
-show_graph(locations::AbstractVector, edges; kwargs...) = show_graph(()->nothing, locations, edges; kwargs...)
+show_graph(locs::AbstractVector, edges; kwargs...) = show_graph(()->nothing, locs, edges; kwargs...)
 
 function autolocs(graph, locs, spring, optimal_distance, spring_mask)
     if spring
@@ -415,13 +395,17 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         xpad=1.0,
         ypad=1.0,
         kwargs...)
-    config = GraphDisplayConfig(; xpad, ypad, config_canvas(locs, xpad, ypad)..., kwargs...)
+    length(locs) == 0 && return _draw(f, 100, 100; format, filename)
+
+    xmin, ymin, xmax, ymax = get_bounding_box(locs)
+    config = GraphDisplayConfig(; xpad, ypad, kwargs...)
     m, n = grid
     nv, ne = length(locs), length(edges)
-    dx = (config.xspan+2*config.xpad)*config.unit
-    dy = (config.yspan+2*config.ypad)*config.unit
+    dx = ((xmax-xmin)+2*config.xpad)*config.unit
+    dy = ((xmax-xmin)+2*config.ypad)*config.unit
     Dx, Dy = dx*n, dy*m
-    locs = map(loc->(loc[1]+config.offsetx, loc[2]+config.offsety), locs)
+    transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
+    locs = transform.(locs)
     # default vertex and edge maps
     if vertex_color === nothing
         vertex_color = Dict(false=>config.vertex_fill_color, true=>"red")
@@ -455,4 +439,4 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         f()
     end
 end
-show_gallery(locations::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locations, edges, grid; kwargs...)
+show_gallery(locs::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locs, edges, grid; kwargs...)
