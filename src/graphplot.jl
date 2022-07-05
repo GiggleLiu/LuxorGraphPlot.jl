@@ -1,3 +1,13 @@
+const DEFAULT_BACKGROUND_COLOR = Ref("white")
+const DEFAULT_UNIT = Ref(50)
+const DEFAULT_FONTSIZE = Ref(12.0)
+const DEFAULT_VERTEX_SIZE = Ref(0.15)
+const DEFAULT_FORMAT = Ref(:svg)
+const DEFAULT_VERTEX_TEXT_COLOR = Ref("black")
+const DEFAULT_VERTEX_STROKE_COLOR = Ref("black")
+const DEFAULT_VERTEX_FILL_COLOR = Ref("transparent")
+const DEFAULT_EDGE_COLOR = Ref("black")
+
 const CONFIGHELP = """
 Extra keyword arguments
 -------------------------------
@@ -6,19 +16,19 @@ Extra keyword arguments
     * `ypad::Float64 = 1.0`, the padding space in y direction
     * `xpad_right::Float64 = 1.0`, the padding space in x direction (right side)
     * `ypad_bottom::Float64 = 1.0`, the padding space in y direction (bottom side)
-    * `background_color = "transparent"`, the background color
-    * `unit::Float64 = 50`, the unit distance as the number of pixels
-    * `fontsize::Float64 = 12`, the font size
+    * `background_color = DEFAULT_BACKGROUND_COLOR[]`, the background color
+    * `unit::Float64 = DEFAULT_UNIT[]`, the unit distance as the number of pixels
+    * `fontsize::Float64 = DEFAULT_FONTSIZE[]`, the font size
 * vertex
-    * `vertex_text_color = "black"`, the default text color
-    * `vertex_stroke_color = "black"`, the default stroke color for vertices
-    * `vertex_fill_color = "transparent"`, the default default fill color for vertices
-    * `vertex_size::Float64 = 0.15`, the default vertex size
+    * `vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]`, the default text color
+    * `vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]`, the default stroke color for vertices
+    * `vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR[]`, the default default fill color for vertices
+    * `vertex_size::Float64 = DEFAULT_VERTEX_SIZE[]`, the default vertex size
     * `vertex_shape::String = "circle"`, the default vertex shape, which can be "circle" or "box"
     * `vertex_line_width::Float64 = 1`, the default vertex stroke line width
     * `vertex_line_style::String = "solid"`, the line style of vertex stroke, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 * edge
-    * `edge_color = "black"`, the default edge color
+    * `edge_color = DEFAULT_EDGE_COLOR[]`, the default edge color
     * `edge_line_width::Float64 = 1`, the default line width
     * `edge_style::String = "solid"`, the line style of edges, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 """
@@ -28,20 +38,20 @@ Base.@kwdef struct GraphDisplayConfig
     ypad::Float64 = 1.0
     xpad_right::Float64 = 1.0
     ypad_bottom::Float64 = 1.0
-    background_color = "transparent"
-    unit::Int = 50   # how many pixels as unit?
-    fontsize::Float64 = 12
+    background_color = DEFAULT_BACKGROUND_COLOR[]
+    unit::Int = DEFAULT_UNIT[]   # how many pixels as unit?
+    fontsize::Float64 = DEFAULT_FONTSIZE[]
 
     # vertex
-    vertex_text_color = "black"
-    vertex_stroke_color = "black"
-    vertex_fill_color = "transparent"
-    vertex_size::Float64 = 0.15
+    vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]
+    vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]
+    vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR[]
+    vertex_size::Float64 = DEFAULT_VERTEX_SIZE[]
     vertex_shape::String = "circle"
     vertex_line_width::Float64 = 1  # in pt
     vertex_line_style::String = "solid"
     # edge
-    edge_color = "black"
+    edge_color = DEFAULT_EDGE_COLOR[]
     edge_line_width::Float64 = 1  # in pt
     edge_line_style::String = "solid"
 end
@@ -68,7 +78,7 @@ end
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=:svg,
+        format=DEFAULT_FORMAT[],
         filename=nothing,
         kwargs...)
 
@@ -114,7 +124,7 @@ function show_graph(f, locs, edges;
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=:svg, filename=nothing,
+        format=DEFAULT_FORMAT[], filename=nothing,
         xpad=1.0,
         ypad=1.0,
         xpad_right=xpad,
@@ -334,7 +344,7 @@ end
         texts=nothing,
         xpad=1.0,
         ypad=1.0,
-        format=:svg,
+        format=DEFAULT_FORMAT[],
         filename=nothing,
         kwargs...)
 
@@ -399,7 +409,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         texts=nothing,
-        format=:svg,
+        format=DEFAULT_FORMAT[],
         filename=nothing,
         xpad=1.0,
         ypad=1.0,
