@@ -19,6 +19,7 @@ Extra keyword arguments
     * `background_color = DEFAULT_BACKGROUND_COLOR[]`, the background color
     * `unit::Float64 = DEFAULT_UNIT[]`, the unit distance as the number of pixels
     * `fontsize::Float64 = DEFAULT_FONTSIZE[]`, the font size
+    * `fontface::String = ""`, the font face, leave empty to follow system
 * vertex
     * `vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]`, the default text color
     * `vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]`, the default stroke color for vertices
@@ -41,6 +42,7 @@ Base.@kwdef struct GraphDisplayConfig
     background_color = DEFAULT_BACKGROUND_COLOR[]
     unit::Int = DEFAULT_UNIT[]   # how many pixels as unit?
     fontsize::Float64 = DEFAULT_FONTSIZE[]
+    fontface::String = ""
 
     # vertex
     vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]
@@ -209,7 +211,8 @@ function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_te
             line_width=config.vertex_line_width,
             line_style=config.vertex_line_style)
         draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/50,
-            color=_get(vertex_text_colors, i, config.vertex_text_color))
+            color=_get(vertex_text_colors, i, config.vertex_text_color),
+            fontface=config.fontface)
     end
 end
 _get(::Nothing, i, default) = default
@@ -224,8 +227,10 @@ function _node(shape::String, loc, size)
     end
 end
 
-function draw_text(loc, text; fontsize, color)
+function draw_text(loc, text; fontsize, color, fontface)
+    isempty(text) && return
     Luxor.fontsize(fontsize)
+    !isempty(fontface) && Luxor.fontface(fontface)
     setcolor(color)
     Luxor.text(text, loc, valign=:middle, halign=:center)
 end
