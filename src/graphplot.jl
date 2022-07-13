@@ -127,23 +127,32 @@ function show_graph(f, locs, edges;
         edge_colors=nothing,
         texts = nothing,
         format=DEFAULT_FORMAT[], filename=nothing,
-        xpad=1.0,
-        ypad=1.0,
-        xpad_right=xpad,
-        ypad_bottom=ypad,
         kwargs...)
     length(locs) == 0 && return _draw(f, 100, 100; format, filename)
 
-    xmin, ymin, xmax, ymax = get_bounding_box(locs)
-    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
-    Dx, Dy = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit, ((ymax-ymin)+config.ypad+config.ypad_bottom)*config.unit
-    transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
-    _draw(Dx, Dy; format, filename) do
+    (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
+    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
+    _draw(Dx*config.unit, Dy*config.unit; format, filename) do
         background(config.background_color)
         _show_graph(transform.(locs), edges,
         vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
         f()
     end
+end
+
+function get_config(locs, edges;
+        xpad=1.0,
+        ypad=1.0,
+        xpad_right=xpad,
+        ypad_bottom=ypad,
+        kwargs...)
+    xmin, ymin, xmax, ymax = get_bounding_box(locs)
+    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
+    Dx, Dy = (xmax-xmin)+config.xpad+config.xpad_right, (ymax-ymin)+config.ypad+config.ypad_bottom
+    # xmin/ymin is the minimum x/y coordinate
+    # Dx/Dy is the x/y span
+    # config is the plotting config
+    return (xmin, ymin), (Dx, Dy), config
 end
 
 # NOTE: the final positions are in range [-5, 5]
@@ -416,21 +425,14 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         texts=nothing,
         format=DEFAULT_FORMAT[],
         filename=nothing,
-        xpad=1.0,
-        ypad=1.0,
-        xpad_right=xpad,
-        ypad_bottom=ypad,
         kwargs...)
     length(locs) == 0 && return _draw(f, 100, 100; format, filename)
 
-    xmin, ymin, xmax, ymax = get_bounding_box(locs)
-    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
+    (xmin, ymin), (dx, dy), config = get_config(locs, edges; kwargs...)
     m, n = grid
     nv, ne = length(locs), length(edges)
-    dx = ((xmax-xmin)+config.xpad+config.xpad_right)*config.unit
-    dy = ((ymax-ymin)+config.ypad+config.xpad_right)*config.unit
     Dx, Dy = dx*n, dy*m
-    transform(loc) = loc[1]-xmin+xpad, loc[2]-ymin+ypad
+    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
     locs = transform.(locs)
     # default vertex and edge maps
     if vertex_color === nothing
@@ -440,11 +442,11 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         edge_color = Dict(false=>config.edge_color, true=>"red")
     end
 
-    _draw(Dx, Dy; format, filename) do
+    _draw(Dx*config.unit, Dy*config.unit; format, filename) do
         background(config.background_color)
         for i=1:m
             for j=1:n
-                origin((j-1)*dx, (i-1)*dy)
+                origin((j-1)*dx*config.unit, (i-1)*dy*config.unit)
                 # set colors
                 k = (i-1) * n + j
                 vertex_colors = if vertex_configs isa Nothing
