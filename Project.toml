@@ -1,16 +1,17 @@
 name = "LuxorGraphPlot"
 uuid = "1f49bdf2-22a7-4bc4-978b-948dc219fbbc"
 authors = ["GiggleLiu <cacate0129@gmail.com> and contributors"]
-version = "0.1.6"
+version = "0.2.0"
 
 [deps]
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
 
 [compat]
-julia = "1"
 Graphs = "1.7"
 Luxor = "3.3"
+julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

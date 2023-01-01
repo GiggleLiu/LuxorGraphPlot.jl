@@ -70,7 +70,7 @@ end
 """
     show_graph([f, ]graph::SimpleGraph;
         locs=nothing,
-        spring::Bool=locs === nothing,
+        layout=:auto,
         optimal_distance=1.0,
         spring_mask=trues(nv(graph)),
 
@@ -94,7 +94,7 @@ Positional arguments
 Keyword arguments
 -----------------------------
 * `locs` is a vector of tuples for specifying the vertex locations.
-* `spring` is switch to use spring method to optimize the location.
+* `layout` is one of [:auto, :spring, :stress], the default value is `:spring` if locs is `nothing`.
 * `optimal_distance` is a optimal distance parameter for `spring` optimizer.
 * `spring_mask` specfies which location is optimizable for `spring` optimizer.
 
@@ -126,18 +126,41 @@ function show_graph(f, locs, edges;
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=DEFAULT_FORMAT[], filename=nothing,
+        format=DEFAULT_FORMAT[],
+        filename=nothing,
         kwargs...)
-    length(locs) == 0 && return _draw(f, 100, 100; format, filename)
-
+    length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
     (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
     transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
     _draw(Dx*config.unit, Dy*config.unit; format, filename) do
-        background(config.background_color)
-        _show_graph(transform.(locs), edges,
-        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
-        f()
+        _show_graph(locs, edges;
+            vertex_colors,
+            vertex_sizes,
+            vertex_shapes,
+            vertex_stroke_colors,
+            vertex_text_colors,
+            edge_colors,
+            texts,
+            kwargs...)
+        f(x->transform(x) .* config.unit)
     end
+end
+
+function _show_graph(locs, edges;
+        vertex_colors=nothing,
+        vertex_sizes=nothing,
+        vertex_shapes=nothing,
+        vertex_stroke_colors=nothing,
+        vertex_text_colors=nothing,
+        edge_colors=nothing,
+        texts = nothing,
+        kwargs...)
+    (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
+    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
+    background(config.background_color)
+    unitless_show_graph(transform.(locs), edges,
+        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
+    return nothing
 end
 
 function get_config(locs, edges;
@@ -158,29 +181,43 @@ end
 # NOTE: the final positions are in range [-5, 5]
 function show_graph(f, graph::SimpleGraph;
         locs=nothing,
-        spring::Bool=locs === nothing,
+        layout::Symbol=:auto,
         optimal_distance=1.0,
         spring_mask=trues(nv(graph)),
         kwargs...)
-    locs = autolocs(graph, locs, spring, optimal_distance, spring_mask)
+    locs = autolocs(graph, locs, layout, optimal_distance, spring_mask)
     show_graph(f, locs, [(e.src, e.dst) for e in edges(graph)]; kwargs...)
 end
-show_graph(graph::SimpleGraph; kwargs...) = show_graph(()->nothing, graph; kwargs...)
-show_graph(locs::AbstractVector, edges; kwargs...) = show_graph(()->nothing, locs, edges; kwargs...)
+show_graph(graph::SimpleGraph; kwargs...) = show_graph(t->nothing, graph; kwargs...)
+show_graph(locs::AbstractVector, edges; kwargs...) = show_graph(t->nothing, locs, edges; kwargs...)
 
-function autolocs(graph, locs, spring, optimal_distance, spring_mask)
-    if spring
+function autolocs(graph, locs, layout, optimal_distance, spring_mask)
+    if layout == :auto && locs !== nothing
+        return locs
+    else
         locs_x = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 1)
         locs_y = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 2)
-        spring_layout!(graph;
-                    C=optimal_distance,
-                    locs_x,
-                    locs_y,
-                    mask=spring_mask   # mask for which to relocate
+        if layout == :spring || layout == :auto
+            locs_x, locs_y = spring_layout(graph;
+                        C=optimal_distance,
+                        locs_x,
+                        locs_y,
+                        mask=spring_mask   # mask for which to relocate
                     )
-        collect(zip(locs_x, locs_y))
-    else
-        locs
+        elseif layout == :stress
+            locs_x, locs_y = stressmajorize_layout(graph;
+                        locs_x,
+                        locs_y,
+                        C=optimal_distance,
+                        w=nothing,
+                        maxiter = 400 * nv(graph)^2
+                       )
+        elseif layout == :spectral
+            locs_x, locs_y = spectral_layout(graph)
+        else
+            error("either `locs` is nothing, or layout is not defined: $(layout)")
+        end
+        return collect(zip(locs_x, locs_y))
     end
 end
 
@@ -201,13 +238,11 @@ function _draw(f, Dx, Dy; format, filename)
     Luxor.preview()
 end
 
-function _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
-    # nodes
-    nodes = [_node(_get(vertex_shapes, i, config.vertex_shape), Point(vertex)*config.unit, _get(vertex_sizes, i, config.vertex_size)*config.unit) for (i, vertex) in enumerate(locs)]
+function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
+    # nodes, we have to set a minimum size to 1e-3, so that the intersection algorithm can work
+    nodes = [_node(_get(vertex_shapes, i, config.vertex_shape), Point(vertex)*config.unit, max(_get(vertex_sizes, i, config.vertex_size)*config.unit, 1e-3)) for (i, vertex) in enumerate(locs)]
     # edges
     for (k, (i, j)) in enumerate(edges)
-        ri = _get(vertex_sizes, i, config.vertex_size)
-        rj = _get(vertex_sizes, j, config.vertex_size)
         draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
             line_width=config.edge_line_width,
             line_style=config.edge_line_style,
@@ -259,90 +294,9 @@ function draw_vertex(node; stroke_color, fill_color, line_width, line_style)
 end
 
 """
-    spring_layout!(g::AbstractGraph;
-                       locs_x=2*rand(nv(g)).-1.0,
-                       locs_y=2*rand(nv(g)).-1.0,
-                       C=2.0,   # the optimal vertex distance
-                       MAXITER=100,
-                       INITTEMP=2.0,
-                       mask::AbstractVector{Bool}=trues(length(locs_x))   # mask for which to relocate
-                       )
-
-Spring layout for graph plotting, returns a vector of vertex locations.
-
-!!! note
-    This function is copied from [`GraphPlot.jl`](https://github.com/JuliaGraphs/GraphPlot.jl),
-    where you can find more information about his function.
-"""
-function spring_layout!(g::AbstractGraph;
-                       locs_x=2*rand(nv(g)).-1.0,
-                       locs_y=2*rand(nv(g)).-1.0,
-                       C=2.0,   # the optimal vertex distance
-                       MAXITER=100,
-                       INITTEMP=2.0,
-                       mask::AbstractVector{Bool}=trues(length(locs_x))   # mask for which to relocate
-                       )
-
-    nvg = nv(g)
-    adj_matrix = adjacency_matrix(g)
-
-    # The optimal distance bewteen vertices
-    k = C * sqrt(4.0 / nvg)
-    k² = k * k
-
-    # Store forces and apply at end of iteration all at once
-    force_x = zeros(nvg)
-    force_y = zeros(nvg)
-
-    # Iterate MAXITER times
-    @inbounds for iter = 1:MAXITER
-        # Calculate forces
-        for i = 1:nvg
-            force_vec_x = 0.0
-            force_vec_y = 0.0
-            for j = 1:nvg
-                i == j && continue
-                d_x = locs_x[j] - locs_x[i]
-                d_y = locs_y[j] - locs_y[i]
-                dist²  = (d_x * d_x) + (d_y * d_y)
-                dist = sqrt(dist²)
-
-                if !( iszero(adj_matrix[i,j]) && iszero(adj_matrix[j,i]) )
-                    # Attractive + repulsive force
-                    # F_d = dist² / k - k² / dist # original FR algorithm
-                    F_d = dist / k - k² / dist²
-                else
-                    # Just repulsive
-                    # F_d = -k² / dist  # original FR algorithm
-                    F_d = -k² / dist²
-                end
-                force_vec_x += F_d*d_x
-                force_vec_y += F_d*d_y
-            end
-            force_x[i] = force_vec_x
-            force_y[i] = force_vec_y
-        end
-        # Cool down
-        temp = INITTEMP / iter
-        # Now apply them, but limit to temperature
-        for i = 1:nvg
-            mask[i] || continue
-            fx = force_x[i]
-            fy = force_y[i]
-            force_mag  = sqrt((fx * fx) + (fy * fy))
-            scale      = min(force_mag, temp) / force_mag
-            locs_x[i] += force_x[i] * scale
-            locs_y[i] += force_y[i] * scale
-        end
-    end
-
-    locs_x, locs_y
-end
-
-"""
     show_gallery([f, ]graph::SimpleGraph, grid::Tuple{Int,Int};
         locs=nothing,
-        spring::Bool=locs === nothing,
+        layout=:auto,
         optimal_distance=1.0,
         spring_mask=trues(nv(graph)),
 
@@ -373,7 +327,7 @@ Positional arguments
 Keyword arguments
 -----------------------------
 * `locs` is a vector of tuples for specifying the vertex locations.
-* `spring` is switch to use spring method to optimize the location.
+* `layout` is one of [:auto, :spring, :stress], the default value is `:spring` if locs is `nothing`.
 * `optimal_distance` is a optimal distance parameter for `spring` optimizer.
 * `spring_mask` specfies which location is optimizable for `spring` optimizer.
 
@@ -405,14 +359,14 @@ julia> show_gallery(smallgraph(:petersen), (2, 3); format=:png, vertex_configs=[
 """
 function show_gallery(f, graph::SimpleGraph, grid::Tuple{Int,Int};
         locs=nothing,
-        spring::Bool=locs === nothing,
+        layout::Symbol=:auto,
         optimal_distance=1.0,
         spring_mask=trues(nv(graph)),
         kwargs...)
-    locs = autolocs(graph, locs, spring, optimal_distance, spring_mask)
+    locs = autolocs(graph, locs, layout, optimal_distance, spring_mask)
     show_gallery(f, locs, [(e.src, e.dst) for e in edges(graph)], grid; kwargs...)
 end
-show_gallery(graph::SimpleGraph, grid; kwargs...) = show_gallery(()->nothing, graph, grid; kwargs...)
+show_gallery(graph::SimpleGraph, grid; kwargs...) = show_gallery(transform->nothing, graph, grid; kwargs...)
 function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_configs=nothing,
         edge_configs=nothing,
@@ -426,7 +380,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         format=DEFAULT_FORMAT[],
         filename=nothing,
         kwargs...)
-    length(locs) == 0 && return _draw(f, 100, 100; format, filename)
+    length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
 
     (xmin, ymin), (dx, dy), config = get_config(locs, edges; kwargs...)
     m, n = grid
@@ -461,11 +415,11 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
                     k > length(edge_configs) && break
                     [_get(edge_color, edge_configs[k][i], config.edge_color) for i=1:ne]
                 end
-                _show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors,
+                unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors,
                 vertex_sizes, vertex_shapes, edge_colors, texts, config)
             end
         end
-        f()
+        f(x->transform(x) .* config.unit)
     end
 end
 show_gallery(locs::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locs, edges, grid; kwargs...)

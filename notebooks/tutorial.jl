@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.9
+# v0.19.16
 
 using Markdown
 using InteractiveUtils
@@ -33,9 +33,10 @@ md"specify the layout and texts manually"
 let
 	rot15(a, b, i::Int) = cos(2i*π/5)*a + sin(2i*π/5)*b, cos(2i*π/5)*b - sin(2i*π/5)*a
 	locations = [[rot15(0.0, 1.0, i) for i=0:4]..., [rot15(0.0, 0.5, i) for i=0:4]...]
-	show_graph(graph; locs=locations, texts=[string('a'+i) for i=0:9], fontsize=8, xpad_right=7, background_color="gray") do  # extra commands
+	show_graph(graph; locs=locations, texts=[string('a'+i) for i=0:9], fontsize=8, xpad_right=7, background_color="gray") do transformer
+		# extra commands, transformer is a function that convert graph-axis to canvas axis.
 		LuxorGraphPlot.Luxor.fontsize(22)
-		LuxorGraphPlot.Luxor.text("haha, the fontsize is so big!", 200, 120.0)
+		LuxorGraphPlot.Luxor.text("haha, the fontsize is so big!", transformer((1.5, 0.2))...)
 	end
 end
 
@@ -75,6 +76,21 @@ md"or render it in another format"
 
 # ╔═╡ 84c1d386-1661-40f6-a951-1951007c340d
 show_graph(graph; format=:svg)
+
+# ╔═╡ 5f6ac487-4ba1-47c3-98f8-11cc5aa9d22c
+md"# Layouts"
+
+# ╔═╡ d585e182-a789-4321-a782-269d4fe3270f
+md"The default layout is `:auto`, which uses `:spring` if `locs` is `nothing`."
+
+# ╔═╡ d6f0a3ae-1a7f-4955-b8e6-5f827ad841db
+show_graph(graph; layout=:spring)
+
+# ╔═╡ d1ac6091-08aa-4215-9360-7793cb127418
+show_graph(graph; layout=:stress)
+
+# ╔═╡ d7b9d26a-a416-4f82-baa2-f78d0df2e56a
+show_graph(graph; layout=:spectral)
 
 # ╔═╡ a1bd8945-4f34-4313-be71-9583dd0d2c5c
 md"# Show a gallery"
@@ -125,6 +141,11 @@ md"# API references"
 # ╠═5bf69a0b-32c2-4e44-907f-2ce9d9c33435
 # ╟─322945ed-eda1-4e69-87e7-3f88115adc37
 # ╠═84c1d386-1661-40f6-a951-1951007c340d
+# ╟─5f6ac487-4ba1-47c3-98f8-11cc5aa9d22c
+# ╟─d585e182-a789-4321-a782-269d4fe3270f
+# ╠═d6f0a3ae-1a7f-4955-b8e6-5f827ad841db
+# ╠═d1ac6091-08aa-4215-9360-7793cb127418
+# ╠═d7b9d26a-a416-4f82-baa2-f78d0df2e56a
 # ╟─a1bd8945-4f34-4313-be71-9583dd0d2c5c
 # ╟─d29987d0-5a35-42a3-9f5f-6283a2d89704
 # ╠═793d4df0-50a8-40f9-bad0-bc9f2632f5e4
