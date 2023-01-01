@@ -5,6 +5,10 @@ using Test
     include("nodes.jl")
 end
 
+@testset "layouts" begin
+    include("layouts.jl")
+end
+
 @testset "graphplot" begin
     include("graphplot.jl")
 end
