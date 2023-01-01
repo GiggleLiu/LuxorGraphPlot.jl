@@ -142,7 +142,7 @@ function show_graph(f, locs, edges;
             edge_colors,
             texts,
             kwargs...)
-        f(transform)
+        f(x->transform(x) .* config.unit)
     end
 end
 
@@ -243,8 +243,6 @@ function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, v
     nodes = [_node(_get(vertex_shapes, i, config.vertex_shape), Point(vertex)*config.unit, max(_get(vertex_sizes, i, config.vertex_size)*config.unit, 1e-3)) for (i, vertex) in enumerate(locs)]
     # edges
     for (k, (i, j)) in enumerate(edges)
-        ri = _get(vertex_sizes, i, config.vertex_size)
-        rj = _get(vertex_sizes, j, config.vertex_size)
         draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
             line_width=config.edge_line_width,
             line_style=config.edge_line_style,
@@ -368,7 +366,7 @@ function show_gallery(f, graph::SimpleGraph, grid::Tuple{Int,Int};
     locs = autolocs(graph, locs, layout, optimal_distance, spring_mask)
     show_gallery(f, locs, [(e.src, e.dst) for e in edges(graph)], grid; kwargs...)
 end
-show_gallery(graph::SimpleGraph, grid; kwargs...) = show_gallery(()->nothing, graph, grid; kwargs...)
+show_gallery(graph::SimpleGraph, grid; kwargs...) = show_gallery(transform->nothing, graph, grid; kwargs...)
 function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_configs=nothing,
         edge_configs=nothing,
@@ -382,7 +380,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         format=DEFAULT_FORMAT[],
         filename=nothing,
         kwargs...)
-    length(locs) == 0 && return _draw(f, 100, 100; format, filename)
+    length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
 
     (xmin, ymin), (dx, dy), config = get_config(locs, edges; kwargs...)
     m, n = grid
@@ -421,7 +419,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
                 vertex_sizes, vertex_shapes, edge_colors, texts, config)
             end
         end
-        f()
+        f(x->transform(x) .* config.unit)
     end
 end
 show_gallery(locs::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locs, edges, grid; kwargs...)
