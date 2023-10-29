@@ -268,9 +268,9 @@ _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
 function _node(shape::String, loc, size)
     @match shape begin
-        "circle" => Node(Circle, loc; radius=size)
-        "box" => Node(Box, loc; width=2*size, height=2*size)
-        "dot" => Node(Dot, loc)
+        "circle" => Node(:circle, loc; radius=size)
+        "box" => Node(:box, loc; width=2*size, height=2*size)
+        "dot" => Node(:dot, loc)
         _ => error("shape `$shape` is not define!")
     end
 end

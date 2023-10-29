@@ -3,9 +3,8 @@ using Luxor, Graphs
 using LinearAlgebra
 using MLStyle: @match
 
-export node
-export show_graph, show_gallery, spring_layout!, left, right, top, bottom, boundary, connect, node
-export Node, Circle, Box, Polygon, Segment, Dot, ncircle, nbox, npolygon, ndot, nsegment
+export show_graph, show_gallery, spring_layout!, left, right, top, bottom, boundary, connect
+export Node, ncircle, nbox, npolygon, ndot, nline
 
 include("nodes.jl")
 include("layouts.jl")
