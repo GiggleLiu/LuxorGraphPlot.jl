@@ -267,12 +267,11 @@ end
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
 function _node(shape::String, loc, size)
-    if shape == "circle"
-        return node(circle, loc, size)
-    elseif shape == "box"
-        return node(box, loc, 2*size, 2*size)
-    else
-        error("shape `$shape` is not define!")
+    @match shape begin
+        "circle" => Node(Circle, loc; radius=size)
+        "box" => Node(Box, loc; width=2*size, height=2*size)
+        "dot" => Node(Dot, loc)
+        _ => error("shape `$shape` is not define!")
     end
 end
 

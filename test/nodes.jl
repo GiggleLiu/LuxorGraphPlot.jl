@@ -3,6 +3,10 @@ using LuxorGraphPlot: angleof, closest_natural_point
 using LuxorGraphPlot
 using Luxor
 
+@testset "nodes" begin
+    Node(Circle, )
+end
+
 @testset "angleof and boundary" begin
     @test angleof(Point(0.5*sqrt(3.0), 0.5)) ≈ π/6
     n = node(box, O, 100, 100)
