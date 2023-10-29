@@ -8,8 +8,8 @@ const REQUIRED_PARAMS = Dict(
 
 const OPTIONAL_PARAMS = Dict(
     :circle => Dict{Symbol, Any}(),
-    :box => Dict{Symbol, Any}(),
-    :polygon => Dict{Symbol, Any}(),
+    :box => Dict{Symbol, Any}(:smooth=>0),
+    :polygon => Dict{Symbol, Any}(:smooth=>0),
     :line => Dict{Symbol, Any}(:arrowstyle=>"-"),
     :dot => Dict{Symbol, Any}()
 )
@@ -36,7 +36,7 @@ topoint(x::Tuple) = Point(x...)
 ndot(x::Real, y::Real) = ndot(Point(x, y))
 ndot(p) = Node(:dot, topoint(p))
 ncircle(loc, radius) = Node(:circle, loc; radius)
-nbox(loc, width, height) = Node(:box, loc; width, height)
+nbox(loc, width, height; smooth=0.0) = Node(:box, loc; width, height, smooth)
 npolygon(loc, relpath) = Node(:polygon, loc; relpath)
 function nline(args...)
     relpath = [topoint(x) for x in args]
@@ -73,13 +73,14 @@ end
 struct Connection
     start::Node
     stop::Node
+    isarrow::Bool
     arrowprops::Dict{Symbol, Any}
     control_points::Vector{Point}
-    roundness::Float64
+    smoothprops::Dict{Symbol, Any}
 end
-function Connection(start::Node, stop::Node; arrowprops=Dict{Symbol, Any}(), control_points=Point[], roundness=0.0)
-    @assert roundness == 0 # not implemented
-    return Connection(start, stop, arrowprops, Point[topoint(x) for x in control_points], roundness)
+# TODO: polish arrow props, smooth corners
+function Connection(start::Node, stop::Node; isarrow=false, arrowprops=Dict{Symbol, Any}(), control_points=Point[], smoothprops=Dict{Symbol, Any}())
+    return Connection(start, stop, isarrow, arrowprops, Point[topoint(x) for x in control_points], smoothprops)
 end
 connect(a, b; kwargs...) = Connection(tonode(a), tonode(b); kwargs...)
 tonode(a::Point) = ndot(a)
@@ -92,20 +93,49 @@ Base.fill(n::Union{Node, Connection}) = apply_action(n, :fill)
 function apply_action(n::Node, action)
     @match n.shape begin
         :circle => circle(n.loc, n.radius, action)
-        :box => box(n.loc, n.width, n.height, action)
-        :polygon => poly(Ref(n.loc) .+ n.relpath, action; close=true)
+        :box => box(n.loc, n.width, n.height, n.smooth, action)
+        :polygon => if n.props[:smooth] == 0
+                poly(Ref(n.loc) .+ n.relpath, action; close=true)
+            else
+                polysmooth(Ref(n.loc) .+ n.relpath, n.props[:smooth], action)
+            end
         :line => line((Ref(n.loc) .+ n.relpath)..., action)
         :dot => circle(n.loc, 1, action)  # dot has unit radius
     end
 end
 function apply_action(n::Connection, action)
-    a_ = get_connect_point(n.start, n.stop)
-    b_ = get_connect_point(n.stop, n.start)
-    if !isempty(n.arrowprops)
-        arrow(a_, n.control_points..., b_; arrowprops...)
+    a_ = get_connect_point(n.start, isempty(n.control_points) ? n.stop.loc : n.control_points[1])
+    b_ = get_connect_point(n.stop, isempty(n.control_points) ? n.start.loc : n.control_points[end])
+    if n.isarrow
+        # arrow, line or curve
+        arrow(a_, n.control_points..., b_; n.arrowprops...)
         do_action(action)
     else
-        line(a_, n.control_points..., b_, action)
+        method = get(n.smoothprops, :method, "curve")
+        if method == "nosmooth" || isempty(n.control_points)
+            if isempty(n.control_points)
+                # line
+                line(a_, b_, action)
+            else
+                # zig-zag line
+                # TODO: support arrow
+                poly([a_, n.control_points..., b_], action; close=false)
+            end
+        elseif method == "smooth"
+                # TODO: support close=false
+                move(a_)
+                polysmooth([a_, n.control_points..., b_], get(n.smoothprops, :radius, 5), action; close=false)
+        elseif method == "bezier"
+            # bezier curve
+            pts = [a_, n.control_points..., b_]
+            bezpath = makebezierpath(pts)
+            drawbezierpath(bezpath, action, close=false)
+        else
+            # curve
+            move(a_)
+            curve(n.control_points..., b_)
+            do_action(action)
+        end
     end
 end
 
@@ -121,6 +151,7 @@ bottom(n::Node) = boundary(n, -π/2)
 function boundary(n::Node, angle::Real)
     @match n.shape begin
         :circle => ndot(n.loc.x + n.radius * cos(angle), n.loc.y + n.radius * sin(angle))
+        # TODO: polish for rounded corners
         :box || :polygon => begin
             path = getpath(n)
             radi = max(xmax(path) - xmin(path), ymax(path) - ymin(path))
@@ -158,8 +189,8 @@ function getpath(n::Node)
 end
 
 function edge(f, a::Node, b::Node, action=:path)
-    a_ = get_connect_point(a, b)
-    b_ = get_connect_point(b, a)
+    a_ = get_connect_point(a, b.loc)
+    b_ = get_connect_point(b, a.loc)
     edge(f, a_, b_, action)
 end
 function edge(::typeof(line), a::Point, b::Point, action=:path)
@@ -170,14 +201,14 @@ function edge(::typeof(arrow), a::Point, b::Point, action=:path; kwargs...)
     do_action(action)
 end
 
-function get_connect_point(a::Node, b::Node; mode=:exact)
+function get_connect_point(a::Node, bloc::Point; mode=:exact)
     @match a.shape begin
-        :circle => intersectionlinecircle(a.loc, b.loc, a.loc, a.radius)[2]
+        :circle => intersectionlinecircle(a.loc, bloc, a.loc, a.radius)[2]
         :dot => a.loc
         :line => a.loc + a.relpath[end]  # the last node
         :box || :polygon => @match mode begin
-            :natural => closest_natural_point(getpath(a), b.loc)
-            :exact => boundary(a, angleof(b.loc-a.loc)).loc
+            :natural => closest_natural_point(getpath(a), bloc)
+            :exact => boundary(a, angleof(bloc-a.loc)).loc
             _ => error("Connection point mode `:$(mode)` is not defined!")
         end
     end
