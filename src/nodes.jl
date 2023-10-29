@@ -42,7 +42,6 @@ function nline(args...)
     relpath = [topoint(x) for x in args]
     return Node(:line, Point(0, 0); relpath)
 end
-
 function check_props!(shape, props)
     assert_has_props!(shape, props, REQUIRED_PARAMS[shape], OPTIONAL_PARAMS[shape])
 end
@@ -71,10 +70,25 @@ function Base.getproperty(n::Node, p::Symbol)
     return hasfield(Node, p) ? getfield(n, p) : n.props[p]
 end
 
+struct Connection
+    start::Node
+    stop::Node
+    arrowprops::Dict{Symbol, Any}
+    control_points::Vector{Point}
+    roundness::Float64
+end
+function Connection(start::Node, stop::Node; arrowprops=Dict{Symbol, Any}(), control_points=Point[], roundness=0.0)
+    @assert roundness == 0 # not implemented
+    return Connection(start, stop, arrowprops, Point[topoint(x) for x in control_points], roundness)
+end
+connect(a, b; kwargs...) = Connection(tonode(a), tonode(b); kwargs...)
+tonode(a::Point) = ndot(a)
+tonode(a::Node) = a
+
 # default close = true
 # draw at loc
-stroke(n::Node) = apply_action(n, :stroke)
-Base.fill(n::Node) = apply_action(n, :fill)
+stroke(n::Union{Node, Connection}) = apply_action(n, :stroke)
+Base.fill(n::Union{Node, Connection}) = apply_action(n, :fill)
 function apply_action(n::Node, action)
     @match n.shape begin
         :circle => circle(n.loc, n.radius, action)
@@ -84,6 +98,17 @@ function apply_action(n::Node, action)
         :dot => circle(n.loc, 1, action)  # dot has unit radius
     end
 end
+function apply_action(n::Connection, action)
+    a_ = get_connect_point(n.start, n.stop)
+    b_ = get_connect_point(n.stop, n.start)
+    if !isempty(n.arrowprops)
+        arrow(a_, n.control_points..., b_; arrowprops...)
+        do_action(action)
+    else
+        line(a_, n.control_points..., b_, action)
+    end
+end
+
 xmin(path) = minimum(x->x.x, path)
 xmax(path) = maximum(x->x.x, path)
 ymin(path) = minimum(x->x.y, path)
@@ -166,21 +191,3 @@ function closest_natural_point(path::AbstractVector, p::Point)
     minval2, idx2 = findmin(i->distance(p, mid(i)), 1:length(path))
     return minval > minval2 ? mid(idx2) : path[idx]
 end
-
-# labeled items
-const OBJECT_STORE = Dict{String, Node}()
-function label!(obj, key::String)
-    if haskey(OBJECT_STORE, key)
-        error("object $key already exists!")
-    else
-        OBJECT_STORE[key] = obj
-    end
-    return obj
-end
-
-function getobj(a::String)
-    @assert haskey(OBJECT_STORE, a) "object $a not exist!"
-    return OBJECT_STORE[a]
-end
-
-getobj(a::Node) = a

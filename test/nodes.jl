@@ -49,3 +49,8 @@ end
     @test top(n).loc == Point(0.3, 0.4)
     @test bottom(n).loc == Point(-0.1, 0.2)
 end
+
+@testset "connection" begin
+    n = nbox((0.2, 0.4), 1.0, 0.4)
+    @test Connection(left(n), right(n)) isa Connection
+end
