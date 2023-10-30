@@ -266,11 +266,11 @@ function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, v
 end
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
-function _node(shape::String, loc, size)
+function _node(shape, loc, size)
     @match shape begin
-        "circle" => Node(:circle, loc; radius=size)
-        "box" => Node(:box, loc; width=2*size, height=2*size)
-        "dot" => Node(:dot, loc)
+        "circle" || "o" || :circle => Node(:circle, loc; radius=size)
+        "box" || "□" || :box => Node(:box, loc; width=2*size, height=2*size)
+        "dot" || "." || :dot => Node(:dot, loc)
         _ => error("shape `$shape` is not define!")
     end
 end

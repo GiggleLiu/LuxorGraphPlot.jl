@@ -109,3 +109,32 @@ function getcontext!()
     end
 end
 
+function figdiagram(f, Dx, Dy; format=:svg, filename=nothing,
+        background="white",
+        strokeconnections=true,
+        strokenodes=true,
+        fillnodes=false,
+        showlabels=false
+    )
+    if filename === nothing
+        if format == :pdf
+            _format = tempname()*".pdf"
+        else
+            _format = format
+        end
+    else
+        _format = filename
+    end
+    Luxor.Drawing(round(Int,Dx), round(Int,Dy), _format)
+    Luxor.origin(0, 0)
+    Luxor.background(background)
+    d = diagram() do
+        f()
+    end
+    showlabels && LuxorGraphPlot.showlabels(d)
+    strokeconnections && LuxorGraphPlot.strokeconnections(d)
+    strokenodes && LuxorGraphPlot.strokenodes(d)
+    fillnodes && LuxorGraphPlot.fillnodes(d)
+    Luxor.finish()
+    Luxor.preview()
+end

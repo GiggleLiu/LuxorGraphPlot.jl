@@ -31,6 +31,28 @@ function Node(shape::Symbol, loc; props...)
     check_props!(shape, d)
     return Node(shape, topoint(loc), d)
 end
+offset(n::Node, p::Union{Tuple,Point}) = Node(n.shape, n.loc + topoint(p), n.props)
+offset(n::Node, direction, distance) = offset(n, render_offset(direction, distance))
+function offset(n::Node, direction::Node, distance)
+    p = direction.loc - n.loc
+    return offset(n, normalize(p) * distance)
+end
+function render_offset(direction, distance)
+    angle = render_direction(direction)
+    return Point(distance * cos(angle), distance * sin(angle))
+end
+render_direction(s) = @match s begin
+    ::Real => Float64(s)
+    "right" => 0.0
+    "topright" => π/4
+    "top" => π/2
+    "topleft" => 3π/4
+    "left" => 1.0π
+    "bottomleft" => 5π/4
+    "bottom" => 3π/2
+    "bottomright" => 7π/4
+end
+Luxor.distance(a::Node, b::Node) = distance(a.loc, b.loc)
 topoint(x::Point) = x
 topoint(x::Tuple) = Point(x...)
 ndot(x::Real, y::Real) = ndot(Point(x, y))
@@ -100,7 +122,7 @@ function apply_action(n::Node, action)
                 polysmooth(Ref(n.loc) .+ n.relpath, n.props[:smooth], action)
             end
         :line => line((Ref(n.loc) .+ n.relpath)..., action)
-        :dot => circle(n.loc, 1, action)  # dot has unit radius
+        :dot => nothing #circle(n.loc, 1, action)  # dot has unit radius
     end
 end
 function apply_action(n::Connection, action)
@@ -147,6 +169,7 @@ left(n::Node) = boundary(n, π)
 right(n::Node) = boundary(n, 0)
 top(n::Node) = boundary(n, π/2)
 bottom(n::Node) = boundary(n, -π/2)
+center(n::Node) = ndot(n.loc)
 
 function boundary(n::Node, angle::Real)
     @match n.shape begin
