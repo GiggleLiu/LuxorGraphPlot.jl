@@ -1,7 +1,7 @@
 struct Diagram
     # labeled items
-    node_store::Dict{String, Node}
-    connection_store::Dict{String, Connection}
+    node_store::Dict{String, Vector{Node}}
+    connection_store::Dict{String, Vector{Connection}}
     nodes::Vector{Node}
     connections::Vector{Connection}
 end
@@ -12,9 +12,9 @@ label!(d::Diagram, obj::Node, key::String) = _label!(d.node_store, obj, key)
 label!(d::Diagram, obj::Connection, key::String) = _label!(d.connection_store, obj, key)
 function _label!(store, obj::Node, key::String)
     if haskey(store, key)
-        error("object $key already exists!")
+        push!(store[key], obj)
     else
-        store[key] = obj
+        store[key] = [obj]
     end
     return obj
 end
@@ -34,8 +34,10 @@ function Base.push!(d::Diagram, obj::Tuple; kwargs...)
     return push!(d.connections, Connection(tonode.(Ref(d), obj)...; kwargs...))
 end
 function tonode(d::Diagram, s::String)
-    @assert haskey(d.node_store, s) "object $s not exist!"
-    return d.node_store[s]
+    @assert haskey(d.node_store, s) "can not find object with label: $s !"
+    nodes = d.node_store[s]
+    @assert length(nodes) == 1 "multiple objects with label (ambiguity): $s !"
+    return d.node_store[s][]
 end
 tonode(::Diagram, s) = tonode(s)
 tonode(x::String) = tonode(getcontext!(), x)
@@ -48,37 +50,46 @@ function diagram(f)
     return d
 end
 
-for (F, ACT, STORE, LIST) in [
-        (:strokenodes, :stroke, :node_store, :nodes),
-        (:fillnodes, :fill, :node_store, :nodes),
-        (:strokeconnections, :stroke, :connection_store, :connections),
+for (F, ACT, FILTER) in [
+        (:strokenodes, :stroke, :filternodes),
+        (:fillnodes, :fill, :filternodes),
+        (:strokeconnections, :stroke, :filterconnections),
     ]
     @eval function $F(filter, d::Diagram)
-        for (k, v) in d.$STORE
-            if filter(k)
-                $ACT(v)
-            end
-        end
-        if filter("")
-            for n in setdiff(d.$LIST, values(d.$STORE))
-                $ACT(n)
-            end
+        for x in $FILTER(filter, d)
+            $ACT(x)
         end
     end
     @eval $F(d::Diagram) = $F(x->true, d)
 end
+function filternodes(filter, d::Diagram)
+    filterstorage(filter, d.nodes, d.node_store)
+end
+function filterconnections(filter, d::Diagram)
+    filterstorage(filter, d.connections, d.connection_store)
+end
+function filterstorage(filter, totalset::Vector{T}, labelset::Dict{String, Vector{T}}) where T
+    res = T[]
+    for (k, v) in labelset
+        filter(k) && append!(res, v)
+    end
+    filter("") && append!(res, setdiff(totalset, vcat(values(labelset)...)))
+    return res
+end
 function showlabels(filter, d::Diagram)
     for (k, v) in d.node_store
         if filter(k)
-            text(k, v.loc, valign=:middle, halign=:center)
+            for vi in v
+                text(k, vi.loc, valign=:middle, halign=:center)
+            end
         end
     end
 end
 showlabels(d::Diagram) = showlabels(x->true, d)
 
-for F in [:nline, :ndot, :ncircle, :nbox, :npolygon]
+for F in [:line, :dot, :circle, :box, :polygon]
     @eval function $(Symbol(F, :!))(args...; kwargs...)
-        obj = $F(args...; kwargs...)
+        obj = $(Symbol(F, :node))(args...; kwargs...)
         push!(getcontext!(), obj)
         return obj
     end

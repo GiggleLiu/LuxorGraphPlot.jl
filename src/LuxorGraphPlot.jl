@@ -4,9 +4,9 @@ using LinearAlgebra
 using MLStyle: @match
 
 export show_graph, show_gallery, spring_layout!, left, right, top, bottom, center, boundary, connect, offset
-export Node, Connection, ncircle, nbox, npolygon, ndot, nline, tonode
-export Diagram, diagram, strokenodes, fillnodes, strokeconnections, showlabels, figdiagram
-export nbox!, ncircle!, npolygon!, ndot!, nline!, connect!, label!
+export Node, Connection, circlenode, boxnode, polygonnode, dotnode, linenode, tonode
+export Diagram, diagram, strokenodes, fillnodes, strokeconnections, showlabels, figdiagram, filternodes, filterconnections
+export box!, circle!, polygon!, dot!, line!, connect!, label!
 
 include("nodes.jl")
 include("layouts.jl")

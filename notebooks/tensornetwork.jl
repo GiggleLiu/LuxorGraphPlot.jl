@@ -30,9 +30,9 @@ using LaTeXStrings, MathTeXEngine
 				((100, 0), "C"),
 				((100, 100), "D")
 			]
-			label!(ncircle!(loc, radius), label)
+			label!(circle!(loc, radius), label)
 		end
-		label!(nbox!((-100, -100), 30, 30; smooth=7), "7"),
+		label!(box!((-100, -100), 30, 30; smooth=7), "7"),
 		fontsize(28)
 		connect!("A", "B", control_points=[tonode("C").loc, tonode("D").loc])
 		connect!("C", "D", control_points=[tonode("A").loc, tonode("B").loc], isarrow=true, arrowprops=Dict(:finisharrow=>true, :linewidth=>2))
@@ -117,11 +117,11 @@ md"evolve"
 	ctext(txt, pos) = text(txt, pos, valign=:middle, halign=:center)
 	background("white")
 	dd = diagram() do
-		ll = label!(nbox!((xmid, y1), 150, 50), "exp(i L ⊗ L)")
-		topleft = nbox!((x1, y2), boxsize, boxsize; smooth=5)
-		topright = nbox!((x2, y2), boxsize, boxsize)
-		bottomleft = nbox!((x1, y3), boxsize, boxsize)
-		bottomright = nbox!((x2, y3), boxsize, boxsize)
+		ll = label!(box!((xmid, y1), 150, 50), "exp(i L ⊗ L)")
+		topleft = box!((x1, y2), boxsize, boxsize; smooth=5)
+		topright = box!((x2, y2), boxsize, boxsize)
+		bottomleft = box!((x1, y3), boxsize, boxsize)
+		bottomright = box!((x2, y3), boxsize, boxsize)
 		cc!(topleft, ll, "left", offsetrate=0.8)
 		cc!(topright, ll, "right")
 		connect!(topleft, bottomleft)

@@ -5,7 +5,7 @@ using Luxor
 
 @testset "angleof and boundary" begin
     @test angleof(Point(0.5*sqrt(3.0), 0.5)) ≈ π/6
-    n = nbox(O, 100, 100)
+    n = boxnode(O, 100, 100)
     path = getpath(n)
     @test boundary(n, angleof(Point(0.5*sqrt(3.0), 0.5))).loc ≈ Point(50, 50/sqrt(3))
     @test closest_natural_point(path, Point(100, 120)) ≈ Point(50, 50)
@@ -15,13 +15,13 @@ end
 
 @testset "nodes" begin
     # circle
-    n = ncircle((0.2, 0.4), 0.5)
+    n = circlenode((0.2, 0.4), 0.5)
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
     @test top(n).loc == Point(0.2, 0.9)
     @test bottom(n).loc == Point(0.2, -0.1)
     # box
-    n = nbox((0.2, 0.4), 1.0, 0.4)
+    n = boxnode((0.2, 0.4), 1.0, 0.4)
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
     @test top(n).loc == Point(0.2, 0.6)
@@ -29,21 +29,21 @@ end
 
     # polygon
     path = getpath(n)
-    n = npolygon((0.2, 0.4), path .- Ref(Point(0.2, 0.4)))
+    n = polygonnode((0.2, 0.4), path .- Ref(Point(0.2, 0.4)))
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
     @test top(n).loc == Point(0.2, 0.6)
     @test bottom(n).loc == Point(0.2, 0.2)
 
     # dot
-    n = ndot((0.2, 0.4))
+    n = dotnode((0.2, 0.4))
     @test right(n).loc == Point(0.2, 0.4)
     @test left(n).loc == Point(0.2, 0.4)
     @test top(n).loc == Point(0.2, 0.4)
     @test bottom(n).loc == Point(0.2, 0.4)
 
     # line
-    n = nline((-0.1, 0.2), (0.3, 0.4))
+    n = linenode((-0.1, 0.2), (0.3, 0.4))
     @test right(n).loc == Point(0.3, 0.4)
     @test left(n).loc == Point(-0.1, 0.2)
     @test top(n).loc == Point(0.3, 0.4)
@@ -51,6 +51,6 @@ end
 end
 
 @testset "connection" begin
-    n = nbox((0.2, 0.4), 1.0, 0.4)
+    n = boxnode((0.2, 0.4), 1.0, 0.4)
     @test Connection(left(n), right(n)) isa Connection
 end

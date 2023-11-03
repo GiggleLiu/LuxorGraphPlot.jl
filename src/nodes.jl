@@ -39,7 +39,7 @@ function offset(n::Node, direction::Node, distance)
 end
 function render_offset(direction, distance)
     angle = render_direction(direction)
-    return Point(distance * cos(angle), distance * sin(angle))
+    return Point(distance * cos(angle), -distance * sin(angle))
 end
 render_direction(s) = @match s begin
     ::Real => Float64(s)
@@ -54,13 +54,15 @@ render_direction(s) = @match s begin
 end
 Luxor.distance(a::Node, b::Node) = distance(a.loc, b.loc)
 topoint(x::Point) = x
+topoint(x::Node) = x.loc
 topoint(x::Tuple) = Point(x...)
-ndot(x::Real, y::Real) = ndot(Point(x, y))
-ndot(p) = Node(:dot, topoint(p))
-ncircle(loc, radius) = Node(:circle, loc; radius)
-nbox(loc, width, height; smooth=0.0) = Node(:box, loc; width, height, smooth)
-npolygon(loc, relpath) = Node(:polygon, loc; relpath)
-function nline(args...)
+dotnode(x::Real, y::Real) = dotnode(Point(x, y))
+dotnode(p) = Node(:dot, topoint(p))
+circlenode(loc, radius) = Node(:circle, loc; radius)
+boxnode(loc, width, height; smooth=0.0) = Node(:box, loc; width, height, smooth)
+polygonnode(loc, relpath::AbstractVector) = Node(:polygon, loc; relpath=topoint.(relpath))
+polygonnode(relpath::AbstractVector) = polygonnode(Point(0, 0), relpath)
+function linenode(args...)
     relpath = [topoint(x) for x in args]
     return Node(:line, Point(0, 0); relpath)
 end
@@ -105,13 +107,16 @@ function Connection(start::Node, stop::Node; isarrow=false, arrowprops=Dict{Symb
     return Connection(start, stop, isarrow, arrowprops, Point[topoint(x) for x in control_points], smoothprops)
 end
 connect(a, b; kwargs...) = Connection(tonode(a), tonode(b); kwargs...)
-tonode(a::Point) = ndot(a)
+tonode(a::Point) = dotnode(a)
 tonode(a::Node) = a
 
 # default close = true
 # draw at loc
 stroke(n::Union{Node, Connection}) = apply_action(n, :stroke)
 Base.fill(n::Union{Node, Connection}) = apply_action(n, :fill)
+function Luxor.text(t::AbstractString, n::Node; angle=0.0)
+    text(t, n.loc; valign=:middle, halign=:center, angle)
+end
 function apply_action(n::Node, action)
     @match n.shape begin
         :circle => circle(n.loc, n.radius, action)
@@ -168,12 +173,13 @@ ymax(path) = maximum(x->x.y, path)
 for F in [:left, :right, :top, :bottom, :topright, :topleft, :bottomleft, :bottomright]
     @eval $F(n::Node) = boundary(n, $(String(F)))
 end
-center(n::Node) = ndot(n.loc)
+Luxor.midpoint(a::Node, b::Node) = dotnode(midpoint(a.loc, b.loc))
+center(n::Node) = dotnode(n.loc)
 boundary(n::Node, s::String) = boundary(n, render_direction(s))
 
 function boundary(n::Node, angle::Real)
     @match n.shape begin
-        :circle => ndot(n.loc.x + n.radius * cos(angle), n.loc.y + n.radius * sin(angle))
+        :circle => dotnode(n.loc.x + n.radius * cos(angle), n.loc.y + n.radius * sin(angle))
         # TODO: polish for rounded corners
         :box || :polygon => begin
             path = getpath(n)
@@ -181,7 +187,7 @@ function boundary(n::Node, angle::Real)
             x = n.loc.x + 2*radi * cos(angle)
             y = n.loc.y + 2*radi * sin(angle)
             # NOTE: polygon must intersect with its center!
-            ndot(intersectlinepoly(n.loc, Point(x, y), path)[1])
+            dotnode(intersectlinepoly(n.loc, Point(x, y), path)[1])
         end
         :dot => n
         :line => begin
@@ -190,7 +196,7 @@ function boundary(n::Node, angle::Real)
             unitv = Point(cos(angle), sin(angle))
             projects = dotproduct.(Ref(unitv), path)
             mval, mloc = findmax(projects)
-            return ndot(path[mloc])
+            return dotnode(path[mloc])
         end
         _ => error("can not get boundary point for shape: $(n.shape)")
     end

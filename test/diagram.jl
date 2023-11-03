@@ -6,8 +6,8 @@ using Test
     @test (@drawsvg begin
         background("white")
         d = diagram() do
-            label!(ncircle!((0.4, 0.5), 30), "y")
-            label!(ncircle!((0.4, 0.5), 80), "x")
+            label!(circle!((0.4, 0.5), 30), "y")
+            label!(circle!((0.4, 0.5), 80), "x")
             connect!("x", "y")
         end
         sethue("white")
