@@ -165,11 +165,11 @@ xmin(path) = minimum(x->x.x, path)
 xmax(path) = maximum(x->x.x, path)
 ymin(path) = minimum(x->x.y, path)
 ymax(path) = maximum(x->x.y, path)
-left(n::Node) = boundary(n, π)
-right(n::Node) = boundary(n, 0)
-top(n::Node) = boundary(n, π/2)
-bottom(n::Node) = boundary(n, -π/2)
+for F in [:left, :right, :top, :bottom, :topright, :topleft, :bottomleft, :bottomright]
+    @eval $F(n::Node) = boundary(n, $(String(F)))
+end
 center(n::Node) = ndot(n.loc)
+boundary(n::Node, s::String) = boundary(n, render_direction(s))
 
 function boundary(n::Node, angle::Real)
     @match n.shape begin

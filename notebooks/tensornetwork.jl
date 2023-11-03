@@ -16,6 +16,9 @@ using LuxorGraphPlot, Luxor
 # ╔═╡ 6dcfc6e3-8c53-4614-9681-c7e2dd3d05d1
 using LuxorGraphPlot.TensorNetwork
 
+# ╔═╡ 00bee32e-651b-43d7-89ec-40e89d691127
+using LaTeXStrings, MathTeXEngine
+
 # ╔═╡ 0c3dbc41-a43f-4a7f-acd0-6609cb7e8b3b
 @drawsvg begin
 	radius = 30
@@ -98,6 +101,47 @@ simplegriddiagram(3, 3, [(1, 1), (1, 2), (2, 3), (3, 3)], [(1, 2), (2, 3), (3, 4
 # ╔═╡ 3035641f-8ddf-4acc-b1b8-d010e9a6a724
 simplegriddiagram(1, 4, [(1, 2), (1, 3)], [([1, 1], 1), (1, 2), (2, [1, 4])])
 
+# ╔═╡ 05e26bca-edb5-466b-a3be-946392c2bbf5
+md"evolve"
+
+# ╔═╡ 2edf78f1-e444-4b57-83f9-fd48d2f93126
+@drawsvg begin
+	origin(0, 0)
+	x1 = 100
+	x2 = 200
+	xmid = 150
+	y1 = 100
+	y2 = 200
+	y3 = 300
+	boxsize = 50
+	ctext(txt, pos) = text(txt, pos, valign=:middle, halign=:center)
+	background("white")
+	dd = diagram() do
+		ll = label!(nbox!((xmid, y1), 150, 50), "exp(i L ⊗ L)")
+		topleft = nbox!((x1, y2), boxsize, boxsize; smooth=5)
+		topright = nbox!((x2, y2), boxsize, boxsize)
+		bottomleft = nbox!((x1, y3), boxsize, boxsize)
+		bottomright = nbox!((x2, y3), boxsize, boxsize)
+		cc!(topleft, ll, "left", offsetrate=0.8)
+		cc!(topright, ll, "right")
+		connect!(topleft, bottomleft)
+		connect!(topright, bottomright)
+		connect!(topleft, topright)
+		connect!(bottomleft, bottomright)
+		dangle!(bottomleft, "left", 70)
+		dangle!(bottomright, "right", 70)
+		fontsize(18)
+		ctext(L"e^{iL \otimes L^\dagger}", ll.loc)
+		ctext(L"A", topleft.loc)
+		ctext(L"A^\dagger", topright.loc)
+		ctext(L"B", bottomleft.loc)
+		ctext(L"B^\dagger", bottomright.loc)
+	end
+	strokenodes(dd)
+	strokeconnections(dd)
+	#showlabels(dd)
+end 300 400
+
 # ╔═╡ Cell order:
 # ╠═24ef79e2-7674-11ee-2a55-c7205b55976b
 # ╠═2751eab0-f2b2-433e-a8b0-c0f58d14f719
@@ -109,3 +153,6 @@ simplegriddiagram(1, 4, [(1, 2), (1, 3)], [([1, 1], 1), (1, 2), (2, [1, 4])])
 # ╠═fe8b633b-b3f1-426d-8c6d-84be934a53e4
 # ╠═7eb82963-8408-4fab-928f-1eaaf5c92d96
 # ╠═3035641f-8ddf-4acc-b1b8-d010e9a6a724
+# ╟─05e26bca-edb5-466b-a3be-946392c2bbf5
+# ╠═00bee32e-651b-43d7-89ec-40e89d691127
+# ╠═2edf78f1-e444-4b57-83f9-fd48d2f93126

@@ -49,7 +49,7 @@ end
 
 function cc!(a, b, direction; label=nothing, offsetrate=0.5)
     r = distance(a, b)
-    control_points = [offset(a, direction, r * offsetrate).loc, offset(b, direction, r * offsetrate).loc]
+    control_points = [boundary(offset(a, direction, r * offsetrate), direction).loc, boundary(offset(b, direction, r * offsetrate), direction).loc]
     edge = connect!(a, b; control_points)
     # label it
     if label !== nothing
