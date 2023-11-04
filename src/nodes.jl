@@ -9,7 +9,7 @@ const REQUIRED_PARAMS = Dict(
 const OPTIONAL_PARAMS = Dict(
     :circle => Dict{Symbol, Any}(),
     :box => Dict{Symbol, Any}(:smooth=>0),
-    :polygon => Dict{Symbol, Any}(:smooth=>0),
+    :polygon => Dict{Symbol, Any}(:smooth=>0, :close=>true),
     :line => Dict{Symbol, Any}(:arrowstyle=>"-"),
     :dot => Dict{Symbol, Any}()
 )
@@ -59,9 +59,9 @@ topoint(x::Tuple) = Point(x...)
 dotnode(x::Real, y::Real) = dotnode(Point(x, y))
 dotnode(p) = Node(:dot, topoint(p))
 circlenode(loc, radius) = Node(:circle, loc; radius)
-boxnode(loc, width, height; smooth=0.0) = Node(:box, loc; width, height, smooth)
-polygonnode(loc, relpath::AbstractVector) = Node(:polygon, loc; relpath=topoint.(relpath))
-polygonnode(relpath::AbstractVector) = polygonnode(Point(0, 0), relpath)
+boxnode(loc, width, height; kwargs...) = Node(:box, loc; width, height, kwargs...)
+polygonnode(loc, relpath::AbstractVector; kwargs...) = Node(:polygon, loc; relpath=topoint.(relpath), kwargs...)
+polygonnode(relpath::AbstractVector; kwargs...) = polygonnode(Point(0, 0), relpath; kwargs...)
 function linenode(args...)
     relpath = [topoint(x) for x in args]
     return Node(:line, Point(0, 0); relpath)
@@ -122,7 +122,7 @@ function apply_action(n::Node, action)
         :circle => circle(n.loc, n.radius, action)
         :box => box(n.loc, n.width, n.height, n.smooth, action)
         :polygon => if n.props[:smooth] == 0
-                poly(Ref(n.loc) .+ n.relpath, action; close=true)
+                poly(Ref(n.loc) .+ n.relpath, action; close=n.props[:close])
             else
                 polysmooth(Ref(n.loc) .+ n.relpath, n.props[:smooth], action)
             end
