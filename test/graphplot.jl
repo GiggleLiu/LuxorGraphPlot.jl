@@ -1,4 +1,5 @@
 using LuxorGraphPlot, Graphs
+using Luxor
 using Test
 
 @testset "graph plot" begin

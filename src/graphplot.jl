@@ -1,13 +1,3 @@
-const DEFAULT_BACKGROUND_COLOR = Ref("white")
-const DEFAULT_UNIT = Ref(50)
-const DEFAULT_FONTSIZE = Ref(12.0)
-const DEFAULT_VERTEX_SIZE = Ref(0.15)
-const DEFAULT_FORMAT = Ref(:svg)
-const DEFAULT_VERTEX_TEXT_COLOR = Ref("black")
-const DEFAULT_VERTEX_STROKE_COLOR = Ref("black")
-const DEFAULT_VERTEX_FILL_COLOR = Ref("transparent")
-const DEFAULT_EDGE_COLOR = Ref("black")
-
 const CONFIGHELP = """
 Extra keyword arguments
 -------------------------------
@@ -23,7 +13,7 @@ Extra keyword arguments
 * vertex
     * `vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]`, the default text color
     * `vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]`, the default stroke color for vertices
-    * `vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR[]`, the default default fill color for vertices
+    * `vertex_color = DEFAULT_VERTEX_FILL_COLOR[]`, the default default fill color for vertices
     * `vertex_size::Float64 = DEFAULT_VERTEX_SIZE[]`, the default vertex size
     * `vertex_shape::String = "circle"`, the default vertex shape, which can be "circle" or "box"
     * `vertex_line_width::Float64 = 1`, the default vertex stroke line width
@@ -33,29 +23,39 @@ Extra keyword arguments
     * `edge_line_width::Float64 = 1`, the default line width
     * `edge_style::String = "solid"`, the line style of edges, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 """
-Base.@kwdef struct GraphDisplayConfig
+module GraphDisplayConfig
     # line, vertex and text
-    xpad::Float64 = 1.0
-    ypad::Float64 = 1.0
-    xpad_right::Float64 = 1.0
-    ypad_bottom::Float64 = 1.0
-    background_color = DEFAULT_BACKGROUND_COLOR[]
-    unit::Int = DEFAULT_UNIT[]   # how many pixels as unit?
-    fontsize::Float64 = DEFAULT_FONTSIZE[]
-    fontface::String = ""
-
+    xpad = Ref(1.0)
+    ypad = Ref(1.0)
+    xpad_right = Ref(1.0)
+    ypad_bottom = Ref(1.0)
+    fontface = Ref("")
+    background_color = Ref("white")
+    unit = Ref(50)   # how many pixels as unit?
+    fontsize = Ref(12.0)
+    format = Ref(:svg)
+    text = Ref("")
     # vertex
-    vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]
-    vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]
-    vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR[]
-    vertex_size::Float64 = DEFAULT_VERTEX_SIZE[]
-    vertex_shape::String = "circle"
-    vertex_line_width::Float64 = 1  # in pt
-    vertex_line_style::String = "solid"
+    vertex_shape = Ref("circle")
+    vertex_line_width = Ref(1)  # in pt
+    vertex_line_style = Ref("solid")
+    vertex_text_color = Ref("black")
+    vertex_stroke_color = Ref("black")
+    vertex_color = Ref("transparent")
+    vertex_size = Ref(0.15)
     # edge
-    edge_color = DEFAULT_EDGE_COLOR[]
-    edge_line_width::Float64 = 1  # in pt
-    edge_line_style::String = "solid"
+    edge_color = Ref("black")
+    edge_line_width = Ref(1)  # in pt
+    edge_line_style = Ref("solid")
+end
+
+macro get(ex)
+    @match ex begin
+        :($d.$x[$i]) => begin
+            item = Symbol(String(x)[1:end-1])
+            esc(:($haskey($d, $(QuoteNode(x))) ? $d[$(QuoteNode(x))][$i] : $GraphDisplayConfig.$item[]))
+        end
+    end
 end
 
 function get_bounding_box(locs)
@@ -80,7 +80,7 @@ end
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=DEFAULT_FORMAT[],
+        format=GraphDisplayConfig.format[],
         filename=nothing,
         kwargs...)
 
@@ -119,63 +119,41 @@ julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue"
 ```
 """
 function show_graph(f, locs, edges;
-        vertex_colors=nothing,
-        vertex_sizes=nothing,
-        vertex_shapes=nothing,
-        vertex_stroke_colors=nothing,
-        vertex_text_colors=nothing,
-        edge_colors=nothing,
-        texts = nothing,
-        format=DEFAULT_FORMAT[],
+        format=GraphDisplayConfig.format[],
         filename=nothing,
-        kwargs...)
+        kwargs...
+        )
     length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
-    (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
-    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
-    _draw(Dx*config.unit, Dy*config.unit; format, filename) do
+    unit = GraphDisplayConfig.unit[]
+    config = graphsizeconfig(locs)
+    transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
+    _draw(config.Dx*unit, config.Dy*unit; format, filename) do
         _show_graph(locs, edges;
-            vertex_colors,
-            vertex_sizes,
-            vertex_shapes,
-            vertex_stroke_colors,
-            vertex_text_colors,
-            edge_colors,
-            texts,
             kwargs...)
-        f(x->transform(x) .* config.unit)
+        f(x->transform(x) .* unit)
     end
 end
 
-function _show_graph(locs, edges;
-        vertex_colors=nothing,
-        vertex_sizes=nothing,
-        vertex_shapes=nothing,
-        vertex_stroke_colors=nothing,
-        vertex_text_colors=nothing,
-        edge_colors=nothing,
-        texts = nothing,
-        kwargs...)
-    (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
-    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
-    background(config.background_color)
-    unitless_show_graph(transform.(locs), edges,
-        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
+function _show_graph(locs, edges; kwargs...)
+    config = graphsizeconfig(locs)
+    transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
+    background(GraphDisplayConfig.background_color[])
+    unitless_show_graph(transform.(locs), edges, Dict(kwargs...))
     return nothing
 end
 
-function get_config(locs, edges;
+function graphsizeconfig(locs;
         xpad=1.0,
         ypad=1.0,
         xpad_right=xpad,
         ypad_bottom=ypad,
-        kwargs...)
+        )
     xmin, ymin, xmax, ymax = get_bounding_box(locs)
-    config = GraphDisplayConfig(; xpad, ypad, xpad_right, ypad_bottom, kwargs...)
-    Dx, Dy = (xmax-xmin)+config.xpad+config.xpad_right, (ymax-ymin)+config.ypad+config.ypad_bottom
+    Dx, Dy = (xmax-xmin)+xpad+xpad_right, (ymax-ymin)+ypad+ypad_bottom
     # xmin/ymin is the minimum x/y coordinate
     # Dx/Dy is the x/y span
     # config is the plotting config
-    return (xmin, ymin), (Dx, Dy), config
+    return (; xpad, ypad, xpad_right, ypad_bottom, xmin, ymin, Dx, Dy)
 end
 
 # NOTE: the final positions are in range [-5, 5]
@@ -238,25 +216,31 @@ function _draw(f, Dx, Dy; format, filename)
     Luxor.preview()
 end
 
-function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
+function unitless_show_graph(locs, edges, configs::Dict)
+    unit = GraphDisplayConfig.unit[]
     # nodes, we have to set a minimum size to 1e-3, so that the intersection algorithm can work
-    nodes = [_node(_get(vertex_shapes, i, config.vertex_shape), Point(vertex)*config.unit, max(_get(vertex_sizes, i, config.vertex_size)*config.unit, 1e-3)) for (i, vertex) in enumerate(locs)]
+    nodes = [
+        _node(
+            @get(configs.vertex_shapes[i]),
+            Point(vertex)*unit,
+            max(@get(configs.vertex_sizes[i])*unit, 1e-3)
+        ) for (i, vertex) in enumerate(locs)]
     # edges
     for (k, (i, j)) in enumerate(edges)
-        draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
-            line_width=config.edge_line_width,
-            line_style=config.edge_line_style,
+        draw_edge(nodes[i], nodes[j]; color=@get(configs.edge_colors[k]),
+            line_width=GraphDisplayConfig.edge_line_width[],
+            line_style=GraphDisplayConfig.edge_line_style[],
         )
     end
     # vertices
     for (i, node) in enumerate(nodes)
-        draw_vertex(node; fill_color=_get(vertex_colors, i, config.vertex_fill_color),
-            stroke_color=_get(vertex_stroke_colors, i, config.vertex_stroke_color),
-            line_width=config.vertex_line_width,
-            line_style=config.vertex_line_style)
-        draw_text(node.loc, _get(texts, i, "$i"); fontsize=config.fontsize*config.unit/50,
-            color=_get(vertex_text_colors, i, config.vertex_text_color),
-            fontface=config.fontface)
+        draw_vertex(node; fill_color=@get(configs.vertex_colors[i]),
+            stroke_color=@get(configs.vertex_stroke_colors[i]),
+            line_width=GraphDisplayConfig.vertex_line_width[],
+            line_style=GraphDisplayConfig.vertex_line_style[])
+        draw_text(node.loc, @get(configs.texts[i]); fontsize=GraphDisplayConfig.fontsize[]*unit/50,
+            color=@get(configs.vertex_text_colors[i]),
+            fontface=GraphDisplayConfig.fontface[])
     end
 end
 _get(::Nothing, i, default) = default
@@ -311,7 +295,7 @@ end
         texts=nothing,
         xpad=1.0,
         ypad=1.0,
-        format=DEFAULT_FORMAT[],
+        format=GraphDisplayConfig.format[],
         filename=nothing,
         kwargs...)
 
@@ -369,56 +353,56 @@ show_gallery(graph::SimpleGraph, grid; kwargs...) = show_gallery(transform->noth
 function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_configs=nothing,
         edge_configs=nothing,
-        vertex_sizes=nothing,
-        vertex_shapes=nothing,
         vertex_color=nothing,
         edge_color=nothing,
-        vertex_stroke_colors=nothing,
-        vertex_text_colors=nothing,
-        texts=nothing,
-        format=DEFAULT_FORMAT[],
+        format=GraphDisplayConfig.format[],
         filename=nothing,
-        kwargs...)
+        kwargs...
+        )
     length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
 
-    (xmin, ymin), (dx, dy), config = get_config(locs, edges; kwargs...)
+    config = graphsizeconfig(locs)
+    unit = GraphDisplayConfig.unit[]
     m, n = grid
     nv, ne = length(locs), length(edges)
-    Dx, Dy = dx*n, dy*m
-    transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
+    Dx, Dy = config.Dx*n, config.Dx*m
+    transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
     locs = transform.(locs)
     # default vertex and edge maps
     if vertex_color === nothing
-        vertex_color = Dict(false=>config.vertex_fill_color, true=>"red")
+        vertex_color = Dict(false=>GraphDisplayConfig.vertex_color[], true=>"red")
     end
     if edge_color === nothing
-        edge_color = Dict(false=>config.edge_color, true=>"red")
+        edge_color = Dict(false=>GraphDisplayConfig.edge_color[], true=>"red")
     end
 
-    _draw(Dx*config.unit, Dy*config.unit; format, filename) do
-        background(config.background_color)
+    _draw(Dx*unit, Dy*unit; format, filename) do
+        background(GraphDisplayConfig.background_color[])
         for i=1:m
             for j=1:n
-                origin((j-1)*dx*config.unit, (i-1)*dy*config.unit)
+                origin((j-1)*config.Dx*unit, (i-1)*config.Dy*unit)
                 # set colors
                 k = (i-1) * n + j
                 vertex_colors = if vertex_configs isa Nothing
-                    fill(config.vertex_fill_color, nv)
+                    fill(GraphDisplayConfig.vertex_color[], nv)
                 else
                     k > length(vertex_configs) && break
-                    [_get(vertex_color, vertex_configs[k][i], config.vertex_fill_color) for i=1:nv]
+                    [_get(vertex_color, vertex_configs[k][i], GraphDisplayConfig.vertex_color[]) for i=1:nv]
                 end
                 edge_colors = if edge_configs isa Nothing
-                    fill(config.edge_color, ne)
+                    fill(GraphDisplayConfig.edge_color[], ne)
                 else
                     k > length(edge_configs) && break
-                    [_get(edge_color, edge_configs[k][i], config.edge_color) for i=1:ne]
+                    [_get(edge_color, edge_configs[k][i], GraphDisplayConfig.edge_color[]) for i=1:ne]
                 end
-                unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors,
-                vertex_sizes, vertex_shapes, edge_colors, texts, config)
+                unitless_show_graph(locs, edges, Dict(
+                    :vertex_colors => vertex_colors,
+                    :edge_colors => edge_colors,
+                    kwargs...)
+                )
             end
         end
-        f(x->transform(x) .* config.unit)
+        f(x->transform(x) .* unit)
     end
 end
 show_gallery(locs::AbstractVector, edges, grid::Tuple{Int,Int}; kwargs...) = show_gallery(()->nothing, locs, edges, grid; kwargs...)
