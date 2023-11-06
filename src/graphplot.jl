@@ -79,7 +79,6 @@ end
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         edge_colors=nothing,
-        edge_line_widths=nothing,
         texts = nothing,
         format=DEFAULT_FORMAT[],
         filename=nothing,
@@ -105,7 +104,6 @@ Keyword arguments
 * `vertex_stroke_colors` is a vector of color strings for specifying vertex stroke colors.
 * `vertex_text_colors` is a vector of color strings for specifying vertex text colors.
 * `edge_colors` is a vector of color strings for specifying edge colors.
-* `edge_line_widths` is a vector of real numbers for specifying edge line widths.
 * `texts` is a vector of strings for labeling vertices.
 * `format` is the output format, which can be `:svg`, `:png` or `:pdf`.
 * `filename` is a string as the output filename.
@@ -127,7 +125,6 @@ function show_graph(f, locs, edges;
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         edge_colors=nothing,
-        edge_line_widths=nothing,
         texts = nothing,
         format=DEFAULT_FORMAT[],
         filename=nothing,
@@ -143,7 +140,6 @@ function show_graph(f, locs, edges;
             vertex_stroke_colors,
             vertex_text_colors,
             edge_colors,
-            edge_line_widths,
             texts,
             kwargs...)
         f(x->transform(x) .* config.unit)
@@ -157,14 +153,13 @@ function _show_graph(locs, edges;
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         edge_colors=nothing,
-        edge_line_widths=nothing,
         texts = nothing,
         kwargs...)
     (xmin, ymin), (Dx, Dy), config = get_config(locs, edges; kwargs...)
     transform(loc) = loc[1]-xmin+config.xpad, loc[2]-ymin+config.ypad
     background(config.background_color)
     unitless_show_graph(transform.(locs), edges,
-        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, edge_line_widths, texts, config)
+        vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
     return nothing
 end
 
@@ -243,13 +238,13 @@ function _draw(f, Dx, Dy; format, filename)
     Luxor.preview()
 end
 
-function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, edge_line_widths, texts, config)
+function unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors, vertex_sizes, vertex_shapes, edge_colors, texts, config)
     # nodes, we have to set a minimum size to 1e-3, so that the intersection algorithm can work
     nodes = [_node(_get(vertex_shapes, i, config.vertex_shape), Point(vertex)*config.unit, max(_get(vertex_sizes, i, config.vertex_size)*config.unit, 1e-3)) for (i, vertex) in enumerate(locs)]
     # edges
     for (k, (i, j)) in enumerate(edges)
         draw_edge(nodes[i], nodes[j]; color=_get(edge_colors,k,config.edge_color),
-            line_width=_get(edge_line_widths, k, config.edge_line_width),
+            line_width=config.edge_line_width,
             line_style=config.edge_line_style,
         )
     end
@@ -308,7 +303,6 @@ end
         edge_configs=nothing,
         vertex_color=nothing,
         edge_color=nothing,
-        edge_line_widths=nothing,
 
         vertex_sizes=nothing,
         vertex_shapes=nothing,
@@ -339,7 +333,6 @@ Keyword arguments
 * `vertex_configs` is an iterator of bit strings for specifying vertex configurations. It will be rendered as vertex colors.
 * `edge_configs` is an iterator of bit strings for specifying edge configurations. It will be rendered as edge colors.
 * `edge_color` is a dictionary that specifies the edge configuration - color map.
-* `edge_line_widths` is a vector of real numbers for specifying edge line widths.
 * `vertex_color` is a dictionary that specifies the vertex configuration - color map.
 
 * `vertex_sizes` is a vector of real numbers for specifying vertex sizes.
@@ -380,7 +373,6 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
         vertex_shapes=nothing,
         vertex_color=nothing,
         edge_color=nothing,
-        edge_line_widths=nothing,
         vertex_stroke_colors=nothing,
         vertex_text_colors=nothing,
         texts=nothing,
@@ -423,7 +415,7 @@ function show_gallery(f, locs, edges, grid::Tuple{Int,Int};
                     [_get(edge_color, edge_configs[k][i], config.edge_color) for i=1:ne]
                 end
                 unitless_show_graph(locs, edges, vertex_colors, vertex_stroke_colors, vertex_text_colors,
-                vertex_sizes, vertex_shapes, edge_colors, edge_line_widths, texts, config)
+                vertex_sizes, vertex_shapes, edge_colors, texts, config)
             end
         end
         f(x->transform(x) .* config.unit)
