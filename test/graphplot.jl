@@ -1,4 +1,5 @@
 using LuxorGraphPlot, Graphs
+using Luxor
 using Test
 
 @testset "graph plot" begin
@@ -13,4 +14,10 @@ using Test
     # gallery
     @test show_gallery([], [], (3, 3)) isa Drawing
     @test show_gallery(graph, (2,4); vertex_configs=[rand(Bool, 15) for i=1:10], edge_configs=[rand(Bool, 15) for i=1:10]) isa Drawing
+
+    @test LuxorGraphPlot.@temp GraphDisplayConfig.vertex_color[] = "red" GraphDisplayConfig.vertex_line_width=8 begin
+        show_graph([], []; format=:pdf)
+    end isa Drawing
+    @test GraphDisplayConfig.vertex_color[] == "transparent"
+    @test GraphDisplayConfig.vertex_line_width[] == 1
 end
