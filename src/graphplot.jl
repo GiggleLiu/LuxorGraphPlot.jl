@@ -58,6 +58,23 @@ macro get(ex)
     end
 end
 
+macro temp(exs...)
+    preexprs = []
+    postexprs = []
+    for ex in exs[1:end-1]
+        @match ex begin
+            :($x = $b) => begin
+                var = gensym()
+                push!(preexprs, :($var = $x))
+                push!(preexprs, :($x = $b))
+                push!(postexprs, :($x = $var))
+            end
+        end
+    end
+    res = gensym()
+    esc(Expr(:block, preexprs..., :($res = $(exs[end])), postexprs..., res))
+end
+
 function get_bounding_box(locs)
     @assert length(locs) > 0
     xmin = minimum(x->x[1], locs)
@@ -153,7 +170,7 @@ function graphsizeconfig(locs;
     # xmin/ymin is the minimum x/y coordinate
     # Dx/Dy is the x/y span
     # config is the plotting config
-    return (; xpad, ypad, xpad_right, ypad_bottom, xmin, ymin, Dx, Dy)
+    return (; xpad, ypad, xpad_right, ypad_bottom, xmin, ymin, xmax, ymax, Dx, Dy)
 end
 
 # NOTE: the final positions are in range [-5, 5]
