@@ -31,13 +31,13 @@ module GraphDisplayConfig
     ypad_bottom = Ref(1.0)
     fontface = Ref("")
     background_color = Ref("white")
-    unit = Ref(50)   # how many pixels as unit?
+    unit = Ref(50.0)   # how many pixels as unit?
     fontsize = Ref(12.0)
     format = Ref(:svg)
     text = Ref("")
     # vertex
     vertex_shape = Ref("circle")
-    vertex_line_width = Ref(1)  # in pt
+    vertex_line_width = Ref(1.0)  # in pt
     vertex_line_style = Ref("solid")
     vertex_text_color = Ref("black")
     vertex_stroke_color = Ref("black")
@@ -45,7 +45,7 @@ module GraphDisplayConfig
     vertex_size = Ref(0.15)
     # edge
     edge_color = Ref("black")
-    edge_line_width = Ref(1)  # in pt
+    edge_line_width = Ref(1.0)  # in pt
     edge_line_style = Ref("solid")
 end
 
