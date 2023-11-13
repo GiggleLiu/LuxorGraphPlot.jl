@@ -6,6 +6,7 @@ using LuxorGraphPlot.TensorNetwork
 	background("white")
     for (k, (node, shape)) in enumerate([
             (circlenode((0, 0), 30), "circle"),
+            (ellipsenode((0, 0), 60, 40), "ellipse"),
             (boxnode((0, 0), 50, 50; smooth=10), "box"),
             (polygonnode([rotatepoint(Point(30, 0), i*π/3) for i=1:6]; smooth=5), "polygon"),
         ])
@@ -16,12 +17,12 @@ using LuxorGraphPlot.TensorNetwork
             setcolor("black")
             setcolor("red")
             fontsize(6)
-            for p in [left, right, top, bottom, topleft, bottomleft, topright, bottomright, center]
+            for p in [left, right, top, bottom, topleft, bottomleft, topright, bottomright, LuxorGraphPlot.center]
                 text(string(p), offset(fill(circlenode(p(node), 3)), (0, 6)))
             end
         end
     end
-end 300 100
+end 400 100
 
 # ## Connection points
 @drawsvg begin

@@ -1,5 +1,6 @@
 const REQUIRED_PARAMS = Dict(
     :circle => [:radius],
+    :ellipse => [:width, :height],
     :box => [:width, :height],
     :polygon => [:relpath],
     :line => [:relpath],
@@ -8,6 +9,7 @@ const REQUIRED_PARAMS = Dict(
 
 const OPTIONAL_PARAMS = Dict(
     :circle => Dict{Symbol, Any}(),
+    :ellipse => Dict{Symbol, Any}(),
     :box => Dict{Symbol, Any}(:smooth=>0),
     :polygon => Dict{Symbol, Any}(:smooth=>0, :close=>true),
     :line => Dict{Symbol, Any}(:arrowstyle=>"-"),
@@ -59,6 +61,7 @@ topoint(x::Tuple) = Point(x...)
 dotnode(x::Real, y::Real) = dotnode(Point(x, y))
 dotnode(p) = Node(:dot, topoint(p))
 circlenode(loc, radius) = Node(:circle, loc; radius)
+ellipsenode(loc, width, height) = Node(:ellipse, loc; width, height)
 boxnode(loc, width, height; kwargs...) = Node(:box, loc; width, height, kwargs...)
 polygonnode(loc, relpath::AbstractVector; kwargs...) = Node(:polygon, loc; relpath=topoint.(relpath), kwargs...)
 polygonnode(relpath::AbstractVector; kwargs...) = polygonnode(Point(0, 0), relpath; kwargs...)
@@ -121,6 +124,7 @@ end
 function apply_action(n::Node, action)
     @match n.shape begin
         :circle => circle(n.loc, n.radius, action)
+        :ellipse => ellipse(n.loc, n.width, n.height, action)
         :box => box(n.loc, n.width, n.height, n.smooth, action)
         :polygon => if n.props[:smooth] == 0
                 poly(Ref(n.loc) .+ n.relpath, action; close=n.props[:close])
@@ -183,6 +187,7 @@ boundary(n::Node, s::String) = boundary(n, render_direction(s))
 function boundary(n::Node, angle::Real)
     @match n.shape begin
         :circle => dotnode(n.loc.x + n.radius * cos(angle), n.loc.y + n.radius * sin(angle))
+        :ellipse => dotnode(n.loc.x + n.width/2 * cos(angle), n.loc.y + n.height/2 * sin(angle))
         # TODO: polish for rounded corners
         :box || :polygon => begin
             path = getpath(n)
@@ -211,6 +216,7 @@ end
 function getpath(n::Node)
     @match n.shape begin
         :circle => error("getting path of a circle is not allowed!")
+        :ellipse => error("getting path of an ellipse is not allowed!")
         :box => begin
             x, y = n.loc
             w, h = n.width, n.height
@@ -238,6 +244,7 @@ end
 function get_connect_point(a::Node, bloc::Point; mode=:exact)
     @match a.shape begin
         :circle => intersectionlinecircle(a.loc, bloc, a.loc, a.radius)[2]
+        :ellipse => boundary(a, angleof(bloc-a.loc)).loc
         :dot => a.loc
         :line => a.loc + a.relpath[end]  # the last node
         :box || :polygon => @match mode begin
