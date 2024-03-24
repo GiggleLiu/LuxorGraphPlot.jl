@@ -53,7 +53,7 @@ macro get(ex)
     @match ex begin
         :($d.$x[$i]) => begin
             item = Symbol(String(x)[1:end-1])
-            esc(:($haskey($d, $(QuoteNode(x))) ? $d[$(QuoteNode(x))][$i] : $GraphDisplayConfig.$item[]))
+            esc(:($haskey($d, $(QuoteNode(x))) ? $d[$(QuoteNode(x))][$i] : get($d, $(QuoteNode(item)), $GraphDisplayConfig.$item[])))
         end
     end
 end
