@@ -8,6 +8,10 @@ function Base.push!(d::NodeStore, obj::Node)
     push!(d.nodes, obj)
     return d
 end
+function Base.append!(d::NodeStore, objs)
+    append!(d.nodes, objs)
+    return d
+end
 function get_bounding_box(d::AbstractNodeStore)
     xmin_val, xmax_val, ymin_val, ymax_val = Inf, -Inf, Inf, -Inf
     for n in nodes(d)

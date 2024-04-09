@@ -18,7 +18,7 @@ DocMeta.setdocmeta!(LuxorGraphPlot, :DocTestSetup, :(using LuxorGraphPlot); recu
 makedocs(;
     modules=[LuxorGraphPlot],
     authors="Jinguo Liu",
-    repo="https://github.com/GiggleLiu/LuxorGraphPlot.jl/blob/{commit}{path}#{line}",
+    #repo="https://github.com/GiggleLiu/LuxorGraphPlot.jl/blob/{commit}{path}#{line}",
     sitename="LuxorGraphPlot.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
@@ -28,10 +28,8 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Examples" => [
+            "Tutorials" => "generated/tutorials.md",
             "Features" => "generated/features.md",
-        ],
-        "Topics" => [
-            "Gist" => "gist.md",
         ],
         "References" => "ref.md",
     ],

@@ -6,7 +6,7 @@ using MLStyle: @match
 export show_graph, show_gallery, spring_layout!, left, right, top, bottom, center, boundary, connect, offset, topright, topleft, bottomleft, bottomright
 export Node, Connection, circlenode, ellipsenode, boxnode, polygonnode, dotnode, linenode, tonode
 export NodeStore, nodestore, with_nodes
-export box!, circle!, polygon!, dot!, line!, stroke
+export box!, circle!, polygon!, dot!, line!, stroke, ellipse!
 export GraphDisplayConfig
 
 include("nodes.jl")

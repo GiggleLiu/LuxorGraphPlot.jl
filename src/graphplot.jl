@@ -142,7 +142,8 @@ function show_graph(f, locs, edges;
         )
     length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
     unit = GraphDisplayConfig.unit[]
-    config = graphsizeconfig(locs)
+    group1, group2 = split_kwargs(kwargs, [:xpad, :ypad, :xpad_right, :ypad_bottom])
+    config = graphsizeconfig(locs; group1...)
     transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
     _draw(config.Dx*unit, config.Dy*unit; format, filename) do
         _show_graph(locs, edges;
@@ -151,11 +152,18 @@ function show_graph(f, locs, edges;
     end
 end
 
+function split_kwargs(kwargs, set)
+    group1 = Dict(k=>v for (k, v) in kwargs if k ∈ set)
+    group2 = Dict(k=>v for (k, v) in kwargs if k ∉ set)
+    return group1, group2
+end
+
 function _show_graph(locs, edges; kwargs...)
-    config = graphsizeconfig(locs)
+    padding_kwargs, extra_kwargs = split_kwargs(kwargs, [:xpad, :ypad, :xpad_right, :ypad_bottom])
+    config = graphsizeconfig(locs; padding_kwargs...)
     transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
     background(GraphDisplayConfig.background_color[])
-    unitless_show_graph(transform.(locs), edges, Dict(kwargs...))
+    unitless_show_graph(transform.(locs), edges, extra_kwargs)
     return nothing
 end
 
