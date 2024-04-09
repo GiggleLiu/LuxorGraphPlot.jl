@@ -1,52 +1,56 @@
 const CONFIGHELP = """
-Extra keyword arguments
--------------------------------
 * general
     * `xpad::Float64 = 1.0`, the padding space in x direction
     * `ypad::Float64 = 1.0`, the padding space in y direction
     * `xpad_right::Float64 = 1.0`, the padding space in x direction (right side)
     * `ypad_bottom::Float64 = 1.0`, the padding space in y direction (bottom side)
-    * `background_color = DEFAULT_BACKGROUND_COLOR[]`, the background color
-    * `unit::Float64 = DEFAULT_UNIT[]`, the unit distance as the number of pixels
-    * `fontsize::Float64 = DEFAULT_FONTSIZE[]`, the font size
+    * `background::String = "white"`, the background color
+    * `unit::Float64 = 50`, the unit distance as the number of pixels
+    * `fontsize::Float64 = 12.0`, the font size
     * `fontface::String = ""`, the font face, leave empty to follow system
 * vertex
-    * `vertex_text_color = DEFAULT_VERTEX_TEXT_COLOR[]`, the default text color
-    * `vertex_stroke_color = DEFAULT_VERTEX_STROKE_COLOR[]`, the default stroke color for vertices
-    * `vertex_color = DEFAULT_VERTEX_FILL_COLOR[]`, the default default fill color for vertices
-    * `vertex_size::Float64 = DEFAULT_VERTEX_SIZE[]`, the default vertex size
-    * `vertex_shape::String = "circle"`, the default vertex shape, which can be "circle" or "box"
+    * `vertex_text_color = "black"`, the default text color
+    * `vertex_stroke_color = "black"`, the default stroke color for vertices
+    * `vertex_color = "transparent"`, the default default fill color for vertices
+    * `vertex_size::Float64 = 10.0`, the default vertex size
+    * `vertex_shape::Symbol = :circle`, the default vertex shape, which can be :circle, :box or :dot
     * `vertex_line_width::Float64 = 1`, the default vertex stroke line width
     * `vertex_line_style::String = "solid"`, the line style of vertex stroke, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 * edge
-    * `edge_color = DEFAULT_EDGE_COLOR[]`, the default edge color
+    * `edge_color = "black"`, the default edge color
     * `edge_line_width::Float64 = 1`, the default line width
     * `edge_style::String = "solid"`, the line style of edges, which can be one of ["solid", "dotted", "dot", "dotdashed", "longdashed", "shortdashed", "dash", "dashed", "dotdotdashed", "dotdotdotdashed"]
 """
-module GraphDisplayConfig
+
+"""
+    GraphDisplayConfig
+
+The configuration for graph display.
+
+Keyword arguments
+-------------------------------
+$CONFIGHELP
+"""
+Base.@kwdef mutable struct GraphDisplayConfig
     # line, vertex and text
-    xpad = Ref(1.0)
-    ypad = Ref(1.0)
-    xpad_right = Ref(1.0)
-    ypad_bottom = Ref(1.0)
-    fontface = Ref("")
-    background_color = Ref("white")
-    unit = Ref(50.0)   # how many pixels as unit?
-    fontsize = Ref(12.0)
-    format = Ref(:svg)
-    text = Ref("")
+    fontface::String = ""
+    background::String = "white"
+    unit::Float64 = 50.0   # how many pixels as unit?
+    fontsize::Float64 = 12.0
+    format::Symbol = :svg
+    text::String = ""
     # vertex
-    vertex_shape = Ref("circle")
-    vertex_line_width = Ref(1.0)  # in pt
-    vertex_line_style = Ref("solid")
-    vertex_text_color = Ref("black")
-    vertex_stroke_color = Ref("black")
-    vertex_color = Ref("transparent")
-    vertex_size = Ref(0.15)
+    vertex_shape::Symbol = :circle
+    vertex_line_width::Float64 = 1.0  # in pt
+    vertex_line_style::String = "solid"
+    vertex_text_color::String = "black"
+    vertex_stroke_color::String = "black"
+    vertex_color::String = "transparent"
+    vertex_size::Float64 = 10.0
     # edge
-    edge_color = Ref("black")
-    edge_line_width = Ref(1.0)  # in pt
-    edge_line_style = Ref("solid")
+    edge_color::String = "black"
+    edge_line_width::Float64 = 1.0  # in pt
+    edge_line_style::String = "solid"
 end
 
 macro get(ex)
@@ -84,6 +88,12 @@ function get_bounding_box(locs)
     return (; xmin, ymin, xmax, ymax)
 end
 
+struct GraphDiagram <: AbstractNodeStore
+    nodes::Vector{Node}
+    edges::Vector{Connection}
+end
+nodes(d::GraphDiagram) = d.nodes
+
 """
     show_graph([f, ]graph::SimpleGraph;
         locs=nothing,
@@ -97,8 +107,8 @@ end
         vertex_text_colors=nothing,
         edge_colors=nothing,
         texts = nothing,
-        format=GraphDisplayConfig.format[],
-        filename=nothing,
+        format = :svg,
+        filename = nothing,
         kwargs...)
 
 Show a graph in VSCode, Pluto or Jupyter notebook, or save it to a file.
@@ -125,6 +135,8 @@ Keyword arguments
 * `format` is the output format, which can be `:svg`, `:png` or `:pdf`.
 * `filename` is a string as the output filename.
 
+Extra keyword arguments
+-------------------------------
 $CONFIGHELP
 
 Example
@@ -136,35 +148,49 @@ julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue"
 ```
 """
 function show_graph(f, locs, edges;
-        format=GraphDisplayConfig.format[],
-        filename=nothing,
+        format = :svg,
+        filename = nothing,
+        padding_left = 10,
+        padding_right = 10,
+        padding_top = 10,
+        padding_bottom = 10,
+        background = :white,
+        vertex_shapes = nothing,
+        vertex_shape = :circle,
+        vertex_sizes = nothing,
+        vertex_size = 10,
         kwargs...
         )
     length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
-    unit = GraphDisplayConfig.unit[]
-    group1, group2 = split_kwargs(kwargs, [:xpad, :ypad, :xpad_right, :ypad_bottom])
-    config = graphsizeconfig(locs; group1...)
-    transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
-    _draw(config.Dx*unit, config.Dy*unit; format, filename) do
-        _show_graph(locs, edges;
-            kwargs...)
-        f(x->transform(x) .* unit)
+    ns = diagram(locs, edges; vertex_shapes, vertex_sizes, vertex_shape, vertex_size)
+    with_nodes(ns; format, filename, padding_bottom, padding_left, padding_right, padding_top, background) do
+        show_diagram(ns; kwargs...)
     end
+end
+
+function diagram(locs, edges; vertex_shapes=nothing, vertex_sizes=nothing, vertex_shape=:circle, vertex_size=10)
+    nodes = Node[]
+    for i=1:length(locs)
+        shape = _get(vertex_shapes, i, vertex_shape)
+        vertex_size = _get(vertex_sizes, i, vertex_size)
+        props = Dict(
+                :circle => Dict(:radius=>vertex_size),
+                :box => Dict(:width=>2*vertex_size, :height=>2*vertex_size),
+                :dot => Dict()
+            )[shape]
+        push!(nodes, Node(shape, loc; props...))
+    end
+    edgs = Connection[]
+    for (i, j) in edges
+        push!(edgs, Connection(i, j))
+    end
+    return GraphDiagram(nodes, edgs)
 end
 
 function split_kwargs(kwargs, set)
     group1 = Dict(k=>v for (k, v) in kwargs if k ∈ set)
     group2 = Dict(k=>v for (k, v) in kwargs if k ∉ set)
     return group1, group2
-end
-
-function _show_graph(locs, edges; kwargs...)
-    padding_kwargs, extra_kwargs = split_kwargs(kwargs, [:xpad, :ypad, :xpad_right, :ypad_bottom])
-    config = graphsizeconfig(locs; padding_kwargs...)
-    transform(loc) = loc[1]-config.xmin+config.xpad, loc[2]-config.ymin+config.ypad
-    background(GraphDisplayConfig.background_color[])
-    unitless_show_graph(transform.(locs), edges, extra_kwargs)
-    return nothing
 end
 
 function graphsizeconfig(locs;
@@ -188,7 +214,7 @@ function show_graph(f, graph::SimpleGraph;
         optimal_distance=1.0,
         spring_mask=trues(nv(graph)),
         kwargs...)
-    locs = autolocs(graph, locs, layout, optimal_distance, spring_mask)
+    locs = autolocs(graph, locs, layout, optimal_distance, spring_mask) .* GraphDisplayConfig.unit[]
     show_graph(f, locs, [(e.src, e.dst) for e in edges(graph)]; kwargs...)
 end
 show_graph(graph::SimpleGraph; kwargs...) = show_graph(t->nothing, graph; kwargs...)
@@ -224,38 +250,20 @@ function autolocs(graph, locs, layout, optimal_distance, spring_mask)
     end
 end
 
-function _draw(f, Dx, Dy; format, filename)
-    if filename === nothing
-        if format == :pdf
-            _format = tempname()*".pdf"
-        else
-            _format = format
-        end
-    else
-        _format = filename
-    end
-    Luxor.Drawing(round(Int,Dx), round(Int,Dy), _format)
-    Luxor.origin(0, 0)
-    f()
-    Luxor.finish()
-    Luxor.preview()
-end
+function show_diagram(locs, edges; vertex_colors, vertex_stroke_colors, vertex_text_colors, texts,
+        edge_colors)
+    unitless_show_graph(transform.(locs), edges, extra_kwargs)
 
-function unitless_show_graph(locs, edges, configs::Dict)
-    unit = GraphDisplayConfig.unit[]
-    # nodes, we have to set a minimum size to 1e-3, so that the intersection algorithm can work
-    nodes = [
-        _node(
-            @get(configs.vertex_shapes[i]),
-            Point(vertex)*unit,
-            max(@get(configs.vertex_sizes[i])*unit, 1e-3)
-        ) for (i, vertex) in enumerate(locs)]
     # edges
     for (k, (i, j)) in enumerate(edges)
-        draw_edge(nodes[i], nodes[j]; color=@get(configs.edge_colors[k]),
+        draw_edge(nodes[i], nodes[j]; color=,
             line_width=GraphDisplayConfig.edge_line_width[],
             line_style=GraphDisplayConfig.edge_line_style[],
         )
+        setcolor(_get(edge_colors, k, edge_color))
+        setline(_get(edge_line_width))
+        setdash(_get(edge_line_style))
+        (arrow ? Luxor.arrow : Luxor.line)(a, b, :stroke; kwargs...)
     end
     # vertices
     for (i, node) in enumerate(nodes)
@@ -263,21 +271,13 @@ function unitless_show_graph(locs, edges, configs::Dict)
             stroke_color=@get(configs.vertex_stroke_colors[i]),
             line_width=GraphDisplayConfig.vertex_line_width[],
             line_style=GraphDisplayConfig.vertex_line_style[])
-        draw_text(node.loc, @get(configs.texts[i]); fontsize=GraphDisplayConfig.fontsize[]*unit/50,
+        draw_text(node.loc, @get(configs.texts[i]); fontsize=GraphDisplayConfig.fontsize[],
             color=@get(configs.vertex_text_colors[i]),
             fontface=GraphDisplayConfig.fontface[])
     end
 end
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
-function _node(shape, loc, size)
-    @match shape begin
-        "circle" || "o" || :circle => Node(:circle, loc; radius=size)
-        "box" || "□" || :box => Node(:box, loc; width=2*size, height=2*size)
-        "dot" || "." || :dot => Node(:dot, loc)
-        _ => error("shape `$shape` is not define!")
-    end
-end
 
 function draw_text(loc, text; fontsize, color, fontface)
     isempty(text) && return
@@ -285,12 +285,6 @@ function draw_text(loc, text; fontsize, color, fontface)
     !isempty(fontface) && Luxor.fontface(fontface)
     setcolor(color)
     Luxor.text(text, loc, valign=:middle, halign=:center)
-end
-function draw_edge(a::Union{Node,Point}, b::Union{Node,Point}; color, line_width, line_style, arrow=false, kwargs...)
-    setcolor(color)
-    setline(line_width)
-    setdash(line_style)
-    (arrow ? Luxor.arrow : Luxor.line)(a, b, :stroke; kwargs...)
 end
 function draw_vertex(node; stroke_color, fill_color, line_width, line_style)
     setcolor(fill_color)
@@ -355,6 +349,8 @@ Keyword arguments
 * `format` is the output format, which can be `:svg`, `:png` or `:pdf`.
 * `filename` is a string as the output filename.
 
+Extra keyword arguments
+-------------------------------
 $CONFIGHELP
 
 Example

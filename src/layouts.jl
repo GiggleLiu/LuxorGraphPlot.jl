@@ -80,7 +80,24 @@ function spring_layout(g::AbstractGraph;
     locs_x, locs_y
 end
 
-# Source: https://github.com/JuliaGraphs/GraphPlot.jl/blob/e97063729fd9047c4482070870e17ed1d95a3211/src/stress.jl
+"""
+    stressmajorize_layout(g::AbstractGraph;
+                               locs_x=2*rand(nv(g)) .- 1.0,
+                               locs_y=2*rand(nv(g)) .- 1.0,
+                               w=nothing,
+                               C=2.0,   # the optimal vertex distance
+                               maxiter = 400 * nv(g)^2,
+                               abstols=1e-2,
+                               reltols=1e-2,
+                               abstolx=1e-2,
+                               verbose = false
+                               )
+
+Stress majorization layout for graph plotting, returns a vector of vertex locations.
+
+### References
+* https://github.com/JuliaGraphs/GraphPlot.jl/blob/e97063729fd9047c4482070870e17ed1d95a3211/src/stress.jl
+"""
 function stressmajorize_layout(g::AbstractGraph;
                                locs_x=2*rand(nv(g)) .- 1.0,
                                locs_y=2*rand(nv(g)) .- 1.0,
@@ -181,6 +198,11 @@ function LZ!(L, Z, d, w)
     return L
 end
 
+"""
+    spectral_layout(g::AbstractGraph, weight=nothing)
+
+Spectral layout for graph plotting, returns a vector of vertex locations.
+"""
 function spectral_layout(g::AbstractGraph, weight=nothing)
     if nv(g) == 1
         return [0.0], [0.0]
@@ -188,7 +210,7 @@ function spectral_layout(g::AbstractGraph, weight=nothing)
         return [0.0, 1.0], [0.0, 0.0]
     end
 
-    if weight == nothing
+    if weight === nothing
         weight = ones(ne(g))
     end
     if nv(g) > 500

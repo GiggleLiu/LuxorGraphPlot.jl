@@ -11,8 +11,8 @@ export GraphDisplayConfig
 
 include("nodes.jl")
 include("layouts.jl")
-include("graphplot.jl")
 include("nodestore.jl")
+include("graphplot.jl")
 include("tnet.jl")
 
 end
