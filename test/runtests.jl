@@ -13,6 +13,6 @@ end
     include("nodes.jl")
 end
 
-@testset "diagram" begin
-    include("diagram.jl")
+@testset "nodestore" begin
+    include("nodestore.jl")
 end
