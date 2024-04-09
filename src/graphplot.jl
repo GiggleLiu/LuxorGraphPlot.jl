@@ -282,7 +282,7 @@ function draw_edge(a::Union{Node,Point}, b::Union{Node,Point}; color, line_width
     setcolor(color)
     setline(line_width)
     setdash(line_style)
-    edge(arrow ? Luxor.arrow : Luxor.line, a, b, :stroke; kwargs...)
+    (arrow ? Luxor.arrow : Luxor.line)(a, b, :stroke; kwargs...)
 end
 function draw_vertex(node; stroke_color, fill_color, line_width, line_style)
     setcolor(fill_color)

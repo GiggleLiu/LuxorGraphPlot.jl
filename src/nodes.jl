@@ -61,10 +61,17 @@ dotnode(p) = Node(:dot, topoint(p))
 circlenode(loc, radius) = Node(:circle, loc; radius)
 boxnode(loc, width, height; kwargs...) = Node(:box, loc; width, height, kwargs...)
 polygonnode(loc, relpath::AbstractVector; kwargs...) = Node(:polygon, loc; relpath=topoint.(relpath), kwargs...)
-polygonnode(relpath::AbstractVector; kwargs...) = polygonnode(Point(0, 0), relpath; kwargs...)
+function polygonnode(path::AbstractVector; kwargs...)
+    mid, relpath = centerize([topoint(x) for x in path])
+    Node(:polygon, mid; relpath, kwargs...)
+end
 function linenode(args...)
-    relpath = [topoint(x) for x in args]
-    return Node(:line, Point(0, 0); relpath)
+    mid, relpath = centerize([topoint(x) for x in args])
+    return Node(:line, mid; relpath)
+end
+function centerize(path)
+    mid = sum(path) / length(path)
+    return mid, path .- mid
 end
 function check_props!(shape, props)
     assert_has_props!(shape, props, REQUIRED_PARAMS[shape], OPTIONAL_PARAMS[shape])
@@ -98,13 +105,14 @@ struct Connection
     start::Node
     stop::Node
     isarrow::Bool
+    mode::Symbol
     arrowprops::Dict{Symbol, Any}
     control_points::Vector{Point}
     smoothprops::Dict{Symbol, Any}
 end
 # TODO: polish arrow props, smooth corners
-function Connection(start::Node, stop::Node; isarrow=false, arrowprops=Dict{Symbol, Any}(), control_points=Point[], smoothprops=Dict{Symbol, Any}())
-    return Connection(start, stop, isarrow, arrowprops, Point[topoint(x) for x in control_points], smoothprops)
+function Connection(start::Node, stop::Node; isarrow=false, mode=:exact, arrowprops=Dict{Symbol, Any}(), control_points=Point[], smoothprops=Dict{Symbol, Any}())
+    return Connection(start, stop, isarrow, mode, arrowprops, Point[topoint(x) for x in control_points], smoothprops)
 end
 connect(a, b; kwargs...) = Connection(tonode(a), tonode(b); kwargs...)
 tonode(a::Point) = dotnode(a)
@@ -131,8 +139,8 @@ function apply_action(n::Node, action)
     end
 end
 function apply_action(n::Connection, action)
-    a_ = get_connect_point(n.start, isempty(n.control_points) ? n.stop.loc : n.control_points[1])
-    b_ = get_connect_point(n.stop, isempty(n.control_points) ? n.start.loc : n.control_points[end])
+    a_ = get_connect_point(n.start, isempty(n.control_points) ? n.stop.loc : n.control_points[1]; mode=n.mode)
+    b_ = get_connect_point(n.stop, isempty(n.control_points) ? n.start.loc : n.control_points[end]; mode=n.mode)
     if n.isarrow
         # arrow, line or curve
         arrow(a_, n.control_points..., b_; n.arrowprops...)
@@ -187,7 +195,13 @@ function boundary(n::Node, angle::Real)
             x = n.loc.x + 2*radi * cos(angle)
             y = n.loc.y + 2*radi * sin(angle)
             # NOTE: polygon must intersect with its center!
-            dotnode(intersectlinepoly(n.loc, Point(x, y), path)[1])
+            intersect = intersectlinepoly(n.loc, Point(x, y), path)
+            if isempty(intersect)
+                @warn "boundary point not found, return center instead: path=$path, angle=$angle"
+                return center(n)
+            else
+                return dotnode(intersect[1])
+            end
         end
         :dot => n
         :line => begin
@@ -205,7 +219,7 @@ end
 # get the path of a node
 function getpath(n::Node)
     @match n.shape begin
-        :circle => error("getting path of a circle is not allowed!")
+        :circle => [Point(n.loc.x + n.radius * cos(θ), n.loc.y + n.radius * sin(θ)) for θ in 0:π/8:2π]
         :box => begin
             x, y = n.loc
             w, h = n.width, n.height
@@ -217,20 +231,19 @@ function getpath(n::Node)
     end
 end
 
-function edge(f, a::Node, b::Node, action=:path)
-    a_ = get_connect_point(a, b.loc)
-    b_ = get_connect_point(b, a.loc)
-    edge(f, a_, b_, action)
+function Luxor.line(a::Node, b::Node, action=:stroke; mode=:exact, kwargs...)
+    a_ = get_connect_point(a, b.loc; mode)
+    b_ = get_connect_point(b, a.loc; mode)
+    line(a_, b_, action; kwargs...)
 end
-function edge(::typeof(line), a::Point, b::Point, action=:path)
-    line(a, b, action)
-end
-function edge(::typeof(arrow), a::Point, b::Point, action=:path; kwargs...)
-    arrow(a, b; kwargs...)
+function Luxor.arrow(a::Node, b::Node, action=:stroke; mode=:exact, kwargs...)
+    a_ = get_connect_point(a, b.loc; mode)
+    b_ = get_connect_point(b, a.loc; mode)
+    arrow(a_, b_; kwargs...)
     do_action(action)
 end
 
-function get_connect_point(a::Node, bloc::Point; mode=:exact)
+function get_connect_point(a::Node, bloc::Point; mode)
     @match a.shape begin
         :circle => intersectionlinecircle(a.loc, bloc, a.loc, a.radius)[2]
         :dot => a.loc
