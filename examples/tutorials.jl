@@ -1,5 +1,5 @@
 ## Show a graph
-using Graphs, LuxorGraphPlot
+using Graphs, LuxorGraphPlot, LuxorGraphPlot.Luxor
 
 # Show a graph with spring (default) layout.
 
