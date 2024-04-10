@@ -7,7 +7,8 @@ export show_graph, show_gallery, spring_layout!, left, right, top, bottom, cente
 export Node, Connection, circlenode, ellipsenode, boxnode, polygonnode, dotnode, linenode, tonode
 export NodeStore, nodestore, with_nodes
 export box!, circle!, polygon!, dot!, line!, stroke, ellipse!
-export GraphDisplayConfig
+export GraphDisplayConfig, GraphViz, Layout, render_layout
+export lighttheme!, darktheme!
 
 include("nodes.jl")
 include("layouts.jl")

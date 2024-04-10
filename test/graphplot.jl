@@ -2,6 +2,24 @@ using LuxorGraphPlot, Graphs
 using Luxor
 using Test
 
+@testset "GraphDisplayConfig" begin
+    config = GraphDisplayConfig()
+    @test config isa GraphDisplayConfig
+    c1 = darktheme!(copy(config))
+    @test c1 isa GraphDisplayConfig
+    @test c1.vertex_stroke_color == "white"
+    c2 = lighttheme!(copy(config))
+    @test c2 isa GraphDisplayConfig
+    @test c2.vertex_stroke_color == "black"
+end
+
+@testset "GraphViz" begin
+    graph = smallgraph(:petersen)
+    gv = GraphViz(graph)
+    @test gv isa GraphViz
+    @test gv.locs isa Array
+end
+
 @testset "graph plot" begin
     locations = [(1.0, 2.0), (2.0, 3.0)]
     @test show_graph(locations, [(1, 2)]) isa Drawing
@@ -14,10 +32,4 @@ using Test
     # gallery
     @test show_gallery([], [], (3, 3)) isa Drawing
     @test show_gallery(graph, (2,4); vertex_configs=[rand(Bool, 15) for i=1:10], edge_configs=[rand(Bool, 15) for i=1:10]) isa Drawing
-
-    @test LuxorGraphPlot.@temp GraphDisplayConfig.vertex_color[] = "red" GraphDisplayConfig.vertex_line_width=8 begin
-        show_graph([], []; format=:pdf)
-    end isa Drawing
-    @test GraphDisplayConfig.vertex_color[] == "transparent"
-    @test GraphDisplayConfig.vertex_line_width[] == 1
 end
