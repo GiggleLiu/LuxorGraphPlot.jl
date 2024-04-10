@@ -167,6 +167,7 @@ end
 function Connection(start::Node, stop::Node; isarrow=false, mode=:exact, arrowprops=Dict{Symbol, Any}(), control_points=Point[], smoothprops=Dict{Symbol, Any}())
     return Connection(start, stop, mode, isarrow, arrowprops, Point[topoint(x) for x in control_points], smoothprops)
 end
+offset(c::Connection, p::Union{Tuple,Point}) = Connection(offset(c.start, p), offset(c.stop, p); c.mode, c.isarrow, c.arrowprops, c.control_points, c.smoothprops)
 connect(a, b; kwargs...) = Connection(tonode(a), tonode(b); kwargs...)
 tonode(a::Point) = dotnode(a)
 tonode(a::Node) = a

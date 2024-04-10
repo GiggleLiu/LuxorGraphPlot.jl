@@ -48,7 +48,7 @@ struct Layout
     locs
     spring_mask
 end
-function Layout(layout=:spring; optimal_distance=20.0, locs=nothing, spring_mask=nothing)
+function Layout(layout=:spring; optimal_distance=50.0, locs=nothing, spring_mask=nothing)
     return Layout(layout, optimal_distance, locs, spring_mask)
 end
 
@@ -80,13 +80,14 @@ function render_locs(graph, l::Layout)
                         maxiter = 400 * nv(graph)^2
                        )
         elseif layout == :spectral
-            locs_x, locs_y = spectral_layout(graph)
+            locs_x, locs_y = spectral_layout(graph; C=optimal_distance)
         else
             error("either `locs` is nothing, or layout is not defined: $(layout)")
         end
         return collect(zip(locs_x, locs_y))
     end
 end
+render_locs(graph, locs::AbstractVector) = locs
 
 
 """
@@ -167,13 +168,16 @@ end
 function GraphViz(graph::SimpleGraph, locs=Layout(:spring); kwargs...)
     return GraphViz(; locs=render_locs(graph, locs), edges=[(src(e), dst(e)) for e in edges(graph)], kwargs...)
 end
+get_bounding_box(g::GraphViz) = (minimum(getindex.(g.locs, 1)), maximum(getindex.(g.locs, 1)), minimum(getindex.(g.locs, 2)), maximum(getindex.(g.locs, 2)))
 
 struct GraphDiagram <: AbstractNodeStore
     nodes::Vector{Node}
     edges::Vector{Connection}
 end
 nodes(d::GraphDiagram) = d.nodes
-offset(d::GraphDiagram, point) = GraphDiagram([offset(n, point) for n in d.nodes], d.edges)
+function offset(d::GraphDiagram, point)
+    GraphDiagram([offset(n, point) for n in d.nodes], [offset(e, point) for e in d.edges])
+end
 
 """
     show_graph([f, ]graph::AbstractGraph;
@@ -221,7 +225,6 @@ function show_graph(f, g::GraphViz;
         padding_bottom = 10,
         config = GraphDisplayConfig(),
     )
-    length(locs) == 0 && return _draw(()->nothing, 100, 100; format, filename)
     diag = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
     with_nodes(diag; format, filename, padding_bottom, padding_left, padding_right, padding_top, background=config.background) do
         f(diag)
@@ -236,7 +239,7 @@ end
 
 function diagram(locs, edges; vertex_sizes=nothing, vertex_shapes=nothing, config=GraphDisplayConfig())
     nodes = Node[]
-    for i=1:length(locs)
+    for i in eachindex(locs)
         shape = _get(vertex_shapes, i, config.vertex_shape)
         vertex_size = _get(vertex_sizes, i, config.vertex_size)
         props = Dict(
@@ -244,11 +247,11 @@ function diagram(locs, edges; vertex_sizes=nothing, vertex_shapes=nothing, confi
                 :box => Dict(:width=>2*vertex_size, :height=>2*vertex_size),
                 :dot => Dict()
             )[shape]
-        push!(nodes, Node(shape, loc; props...))
+        push!(nodes, Node(shape, locs[i]; props...))
     end
     edgs = Connection[]
     for (i, j) in edges
-        push!(edgs, Connection(i, j))
+        push!(edgs, Connection(nodes[i], nodes[j]))
     end
     return GraphDiagram(nodes, edgs)
 end
@@ -264,7 +267,6 @@ function show_graph(f, graph::SimpleGraph, locs=Layout(:spring);
         padding_right = 10,
         padding_top = 10,
         padding_bottom = 10,
-        background = :white,
         format = :svg,
         filename = nothing,
         config = GraphDisplayConfig()
@@ -272,7 +274,7 @@ function show_graph(f, graph::SimpleGraph, locs=Layout(:spring);
     viz = GraphViz(graph, locs;
             vertex_shapes, vertex_sizes, vertex_colors, vertex_stroke_colors,
             vertex_text_colors, edge_colors, texts)
-    show_graph(f, viz; format, filename, padding_bottom, padding_left, padding_right, padding_top, background, config)
+    show_graph(f, viz; format, filename, padding_bottom, padding_left, padding_right, padding_top, config)
 end
 
 function show_diagram(diag::GraphDiagram;
@@ -293,7 +295,7 @@ function show_diagram(diag::GraphDiagram;
     setline(config.vertex_line_width)
     setdash(config.vertex_line_style)
     Luxor.fontsize(config.fontsize)
-    !isempty(fontface) && Luxor.fontface(config.fontface)
+    !isempty(config.fontface) && Luxor.fontface(config.fontface)
     for (i, node) in enumerate(diag.nodes)
         setcolor(_get(vertex_colors, i, config.vertex_color))
         fill(node)
@@ -309,6 +311,30 @@ end
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
 
+"""
+    show_gallery([f, ]stores::AbstractMatrix{GraphViz};
+        kwargs...
+        )
+
+Show a gallery of graphs in VSCode, Pluto or Jupyter notebook, or save it to a file.
+
+Positional arguments
+-----------------------------
+* `f` is a function that returns extra `Luxor` plotting statements.
+* `stores` is a matrix of `GraphViz` instances.
+
+Keyword arguments
+-----------------------------
+* `config` is a [`GraphDisplayConfig`](@ref) instance.
+
+* `padding_left::Int = 10`, the padding on the left side of the drawing
+* `padding_right::Int = 10`, the padding on the right side of the drawing
+* `padding_top::Int = 10`, the padding on the top side of the drawing
+* `padding_bottom::Int = 10`, the padding on the bottom side of the drawing
+
+* `format` is the output format, which can be `:svg`, `:png` or `:pdf`.
+* `filename` is a string as the output filename.
+"""
 function show_gallery(f, stores::AbstractMatrix{GraphViz};
         padding_left=10, padding_right=10,
         padding_top=10, padding_bottom=10,
@@ -316,6 +342,9 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
         format=:svg,
         filename=nothing
     )
+    if isempty(stores)
+        return Luxor.Drawing(1, 1, filename === nothing ? tempname()*".$format" : filename)
+    end
     xmin, _, ymin, _ = get_bounding_box(stores[1, 1]) .+ (-padding_left, padding_right, -padding_top, padding_bottom)
     xspans = map(stores[1, :]) do d
         xmin, xmax, _, _ = get_bounding_box(d) .+ (-padding_left, padding_right, -padding_top, padding_bottom)
@@ -331,7 +360,7 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
 
     Luxor.Drawing(ceil(Int, sum(xspans)), ceil(Int, sum(yspans)), filename === nothing ? tempname()*".$format" : filename)
     Luxor.origin(-xmin, -ymin)
-    Luxor.background(background)
+    Luxor.background(config.background)
     for i=1:m, j=1:n
         g = stores[i, j]
         diag_ = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
@@ -347,3 +376,4 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
     Luxor.finish()
     Luxor.preview()
 end
+show_gallery(stores::AbstractMatrix{GraphViz}; kwargs...) = show_gallery(x->nothing, stores; kwargs...)

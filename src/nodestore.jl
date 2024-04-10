@@ -13,8 +13,10 @@ function Base.append!(d::NodeStore, objs)
     return d
 end
 function get_bounding_box(d::AbstractNodeStore)
+    nds = nodes(d)
+    isempty(nds) && return (0.0, 0.0, 0.0, 0.0)
     xmin_val, xmax_val, ymin_val, ymax_val = Inf, -Inf, Inf, -Inf
-    for n in nodes(d)
+    for n in nds
         path = getpath(n)
         xmin_val = min(xmin_val, xmin(path))
         xmax_val = max(xmax_val, xmax(path))
