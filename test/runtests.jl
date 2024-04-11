@@ -1,5 +1,5 @@
 using LuxorGraphPlot, Graphs
-using Test
+using Test, Documenter
 
 @testset "layouts" begin
     include("layouts.jl")
@@ -16,3 +16,5 @@ end
 @testset "nodestore" begin
     include("nodestore.jl")
 end
+
+Documenter.doctest(LuxorGraphPlot)

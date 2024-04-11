@@ -209,7 +209,7 @@ $VIZHELP
 Example
 ------------------------------
 ```jldoctest
-julia> using Graphs
+julia> using Graphs, LuxorGraphPlot
 
 julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue", "red"], 10));
 ```
