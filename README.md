@@ -16,12 +16,33 @@ julia> using LuxorGraphPlot, Graphs
 
 julia> show_graph(smallgraph(:petersen); format=:svg)
 ```
-![](notebooks/demo.svg)
+![](docs/src/assets/petersen.svg)
 
 ### Lower-level API
 
 You can also use the lower-level API to customize the graph display.
 
 ```julia
-julia> using LuxorGraphPlot, LuxorGraphPlot.Luxor
+using LuxorGraphPlot, LuxorGraphPlot.Luxor
+
+drawing = nodestore() do ns
+    c1 = circle!((-20.0, 0.0), 10)
+    c2 = circle!((20.0, 0.0), 10)
+    c3 = dot!((0.0, 20.0))
+    with_nodes() do
+        sethue("cyan")
+        fill(c1)
+        fill(c2)
+        sethue("black")
+        text("y", c1)
+        text("x", c2)
+        text("z", offset(c3, (10, 0)))
+        line(c1, c2)
+        line(midpoint(c1, c2), c3)
+        end
+    end
 ```
+
+The output is as follows:
+
+![](docs/src/assets/nodestore.svg)
