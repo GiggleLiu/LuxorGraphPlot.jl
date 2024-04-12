@@ -358,7 +358,7 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
     xoffsets = cumsum([0; xspans[1:end-1]])
     yoffsets = cumsum([0; yspans[1:end-1]])
 
-    Luxor.Drawing(ceil(Int, sum(xspans)), ceil(Int, sum(yspans)), filename === nothing ? tempname()*".$format" : filename)
+    Luxor.Drawing(ceil(Int, sum(xspans)), ceil(Int, sum(yspans)), filename === nothing ? format : filename)
     Luxor.origin(-xmin, -ymin)
     Luxor.background(config.background)
     for i=1:m, j=1:n
