@@ -2,22 +2,41 @@ using LuxorGraphPlot, Graphs
 using Luxor
 using Test
 
+@testset "GraphDisplayConfig" begin
+    config = GraphDisplayConfig()
+    @test config isa GraphDisplayConfig
+    c1 = darktheme!(copy(config))
+    @test c1 isa GraphDisplayConfig
+    @test c1.vertex_stroke_color == "white"
+    c2 = lighttheme!(copy(config))
+    @test c2 isa GraphDisplayConfig
+    @test c2.vertex_stroke_color == "black"
+end
+
+@testset "GraphViz" begin
+    graph = smallgraph(:petersen)
+    gv = GraphViz(graph)
+    @test gv isa GraphViz
+    @test gv.locs isa Array
+end
+
 @testset "graph plot" begin
-    locations = [(1.0, 2.0), (2.0, 3.0)]
-    @test show_graph(locations, [(1, 2)]) isa Drawing
-    @test show_graph([], []) isa Drawing
-    @test show_graph([], []; format=:pdf) isa Drawing
-    @test show_graph([], []; filename=tempname()*".svg") isa Drawing
+    locations = [(50.0, 100.0), (100.0, 150.0)]
+    @test show_graph(GraphViz(locs=locations, edges=[(1, 2)])) isa Drawing
+    gv = GraphViz(locs=[], edges=[])
+    @test show_graph(gv) isa Drawing
+    @test show_graph(gv; format=:pdf) isa Drawing
+    @test show_graph(gv; filename=tempname()*".svg") isa Drawing
     graph = smallgraph(:petersen)
     @test show_graph(graph) isa Drawing
-    show_graph(graph; vertex_shapes=fill("box", 10)) isa Drawing
-    # gallery
-    @test show_gallery([], [], (3, 3)) isa Drawing
-    @test show_gallery(graph, (2,4); vertex_configs=[rand(Bool, 15) for i=1:10], edge_configs=[rand(Bool, 15) for i=1:10]) isa Drawing
+    show_graph(graph; vertex_shapes=fill(:box, 10)) isa Drawing
+end
 
-    @test LuxorGraphPlot.@temp GraphDisplayConfig.vertex_color[] = "red" GraphDisplayConfig.vertex_line_width=8 begin
-        show_graph([], []; format=:pdf)
-    end isa Drawing
-    @test GraphDisplayConfig.vertex_color[] == "transparent"
-    @test GraphDisplayConfig.vertex_line_width[] == 1
+@testset "gallery" begin
+    graph = smallgraph(:petersen)
+    locs = render_locs(graph, Layout(:stress))
+    matrix = [GraphViz(graph, locs; vertex_colors=[rand(Luxor.RGB) for i=1:10], edge_colors=[rand(Luxor.RGB) for i=1:15]) for i=1:2, j=1:4]
+    # gallery
+    @test show_gallery(matrix) isa Drawing 
+    @test show_gallery(reshape(GraphViz[], 0, 0)) isa Drawing
 end

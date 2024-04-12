@@ -28,7 +28,7 @@ function spring_layout(g::AbstractGraph;
     adj_matrix = adjacency_matrix(g)
 
     # The optimal distance bewteen vertices
-    k = C * sqrt(4.0 / nvg)
+    k = 2.0 * sqrt(4.0 / nvg)
     k² = k * k
 
     # Store forces and apply at end of iteration all at once
@@ -77,10 +77,27 @@ function spring_layout(g::AbstractGraph;
         end
     end
 
-    locs_x, locs_y
+    C .* locs_x, C .* locs_y
 end
 
-# Source: https://github.com/JuliaGraphs/GraphPlot.jl/blob/e97063729fd9047c4482070870e17ed1d95a3211/src/stress.jl
+"""
+    stressmajorize_layout(g::AbstractGraph;
+                               locs_x=2*rand(nv(g)) .- 1.0,
+                               locs_y=2*rand(nv(g)) .- 1.0,
+                               w=nothing,
+                               C=2.0,   # the optimal vertex distance
+                               maxiter = 400 * nv(g)^2,
+                               abstols=1e-2,
+                               reltols=1e-2,
+                               abstolx=1e-2,
+                               verbose = false
+                               )
+
+Stress majorization layout for graph plotting, returns a vector of vertex locations.
+
+### References
+* https://github.com/JuliaGraphs/GraphPlot.jl/blob/e97063729fd9047c4482070870e17ed1d95a3211/src/stress.jl
+"""
 function stressmajorize_layout(g::AbstractGraph;
                                locs_x=2*rand(nv(g)) .- 1.0,
                                locs_y=2*rand(nv(g)) .- 1.0,
@@ -181,14 +198,19 @@ function LZ!(L, Z, d, w)
     return L
 end
 
-function spectral_layout(g::AbstractGraph, weight=nothing)
+"""
+    spectral_layout(g::AbstractGraph, weight=nothing)
+
+Spectral layout for graph plotting, returns a vector of vertex locations.
+"""
+function spectral_layout(g::AbstractGraph, weight=nothing; C=2.0)
     if nv(g) == 1
         return [0.0], [0.0]
     elseif nv(g) == 2
-        return [0.0, 1.0], [0.0, 0.0]
+        return [0.0, C], [0.0, 0.0]
     end
 
-    if weight == nothing
+    if weight === nothing
         weight = ones(ne(g))
     end
     if nv(g) > 500
@@ -198,10 +220,10 @@ function spectral_layout(g::AbstractGraph, weight=nothing)
         if is_directed(g)
             A = A + transpose(A)
         end
-        return _spectral(A)
+        return _spectral(A) .* 2C
     else
         L = laplacian_matrix(g)
-        return _spectral(Matrix(L))
+        return _spectral(Matrix(L)) .* 2C
     end
 end
 

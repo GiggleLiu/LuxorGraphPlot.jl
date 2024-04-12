@@ -18,22 +18,30 @@ end
     n = circlenode((0.2, 0.4), 0.5)
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
-    @test top(n).loc == Point(0.2, 0.9)
-    @test bottom(n).loc == Point(0.2, -0.1)
+    @test bottom(n).loc == Point(0.2, 0.9)
+    @test top(n).loc == Point(0.2, -0.1)
+    
+    # ellipse
+    n = ellipsenode((0.2, 0.4), 1.0, 2.0)
+    @test right(n).loc == Point(0.7, 0.4)
+    @test left(n).loc == Point(-0.3, 0.4)
+    @test bottom(n).loc == Point(0.2, 1.4)
+    @test top(n).loc == Point(0.2, -0.6)
+
     # box
     n = boxnode((0.2, 0.4), 1.0, 0.4)
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
-    @test top(n).loc == Point(0.2, 0.6)
-    @test bottom(n).loc == Point(0.2, 0.2)
+    @test top(n).loc == Point(0.2, 0.2)
+    @test bottom(n).loc == Point(0.2, 0.6)
 
     # polygon
     path = getpath(n)
     n = polygonnode((0.2, 0.4), path .- Ref(Point(0.2, 0.4)))
     @test right(n).loc == Point(0.7, 0.4)
     @test left(n).loc == Point(-0.3, 0.4)
-    @test top(n).loc == Point(0.2, 0.6)
-    @test bottom(n).loc == Point(0.2, 0.2)
+    @test bottom(n).loc == Point(0.2, 0.6)
+    @test top(n).loc == Point(0.2, 0.2)
 
     # dot
     n = dotnode((0.2, 0.4))
@@ -46,8 +54,8 @@ end
     n = linenode((-0.1, 0.2), (0.3, 0.4))
     @test right(n).loc == Point(0.3, 0.4)
     @test left(n).loc == Point(-0.1, 0.2)
-    @test top(n).loc == Point(0.3, 0.4)
-    @test bottom(n).loc == Point(-0.1, 0.2)
+    @test bottom(n).loc == Point(0.3, 0.4)
+    @test top(n).loc == Point(-0.1, 0.2)
 end
 
 @testset "connection" begin
