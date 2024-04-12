@@ -343,7 +343,7 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
         filename=nothing
     )
     if isempty(stores)
-        return Luxor.Drawing(1, 1, filename === nothing ? tempname()*".$format" : filename)
+        return Luxor.Drawing(1, 1, filename === nothing ? format : filename)
     end
     xmin, _, ymin, _ = get_bounding_box(stores[1, 1]) .+ (-padding_left, padding_right, -padding_top, padding_bottom)
     xspans = map(stores[1, :]) do d

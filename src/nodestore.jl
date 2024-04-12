@@ -112,7 +112,7 @@ function with_nodes(f, d::AbstractNodeStore;
         background="white"
     )
     xmin, xmax, ymin, ymax = get_bounding_box(d) .+ (-padding_left, padding_right, -padding_top, padding_bottom)
-    Luxor.Drawing(ceil(Int, xmax - xmin), ceil(Int, ymax - ymin), filename === nothing ? tempname()*".$format" : filename)
+    Luxor.Drawing(ceil(Int, xmax - xmin), ceil(Int, ymax - ymin), filename === nothing ? format : filename)
     Luxor.origin(-xmin, -ymin)
     Luxor.background(background)
     f()

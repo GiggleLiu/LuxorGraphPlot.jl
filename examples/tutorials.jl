@@ -45,7 +45,7 @@ show_graph(graph;
 
 # One can also dump an image to a file
 
-show_graph(graph; filename=tempname()*".svg")
+show_graph(graph; format=:svg)
 
 # or render it in another format
 
