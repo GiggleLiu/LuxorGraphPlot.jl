@@ -97,6 +97,8 @@ The configuration for graph display.
 
 Keyword arguments
 -------------------------------
+* `locs` is a vector of tuples for specifying the vertex locations.
+* `edges` is a vector of tuples for specifying the edges.
 $CONFIGHELP
 """
 Base.@kwdef mutable struct GraphDisplayConfig
