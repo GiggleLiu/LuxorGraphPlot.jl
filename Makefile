@@ -13,10 +13,10 @@ update-docs:
 	$(JL) -e 'using Pkg; Pkg.activate("docs"); Pkg.update(); Pkg.precompile()'
 
 test:
-	$(JL) -e 'using Pkg; Pkg.test("GenericTensorNetworks")'
+	$(JL) -e 'using Pkg; Pkg.test("LuxorGraphPlot")'
 
 coverage:
-	$(JL) -e 'using Pkg; Pkg.test("GenericTensorNetworks"; coverage=true)'
+	$(JL) -e 'using Pkg; Pkg.test("LuxorGraphPlot"; coverage=true)'
 
 serve:
 	$(JL) -e 'using Pkg; Pkg.activate("docs"); using LiveServer; servedocs(;skip_dirs=["docs/src/assets", "docs/src/generated"], literate_dir="examples")'
