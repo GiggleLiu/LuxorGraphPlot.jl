@@ -305,6 +305,15 @@ function boundary(n::Node, angle::Real)
     end
 end
 
+bottomalign(n::Node, target::Node) = bottomalign(n, target.loc[1])
+bottomalign(n::Node, x::Real) = dotnode(x, bottom(n).loc[2])
+topalign(n::Node, target::Node) = topalign(n, target.loc[1])
+topalign(n::Node, x::Real) = dotnode(x, top(n).loc[2])
+leftalign(n::Node, target::Node) = topalign(n, target.loc[2])
+leftalign(n::Node, y::Real) = dotnode(left(n).loc[1], y)
+rightalign(n::Node, target::Node) = rightalign(n, target.loc[2])
+rightalign(n::Node, y::Real) = dotnode(right(n).loc[1], y)
+
 # get the path of a node
 function getpath(n::Node)
     @match n.shape begin

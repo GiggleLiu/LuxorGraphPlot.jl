@@ -88,6 +88,7 @@ function render_locs(graph, l::Layout)
     end
 end
 render_locs(graph, locs::AbstractVector) = locs
+render_locs(graph, locs::AbstractVector{<:Layouts.Point}) = getfield.(locs, :data)
 
 
 """

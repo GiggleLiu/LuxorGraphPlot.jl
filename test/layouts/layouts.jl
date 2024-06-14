@@ -1,5 +1,20 @@
 using Test, LuxorGraphPlot, Graphs
-using Luxor: Drawing, RGB
+
+@testset "point" begin
+    include("point.jl")
+end
+
+@testset "spring" begin
+    include("spring.jl")
+end
+
+@testset "stress" begin
+    include("stress.jl")
+end
+
+@testset "spectral" begin
+    include("spectral.jl")
+end
 
 @testset "layouts" begin
     graph = smallgraph(:petersen)
