@@ -16,7 +16,7 @@ end
     locs = Layouts.spring_layout(graph; C)
     @test locs isa Vector{<:Layouts.Point{2}}
     Q, D = quality_of_layout(graph, locs, C)
-    @test Q > 1000 && D < 5
+    @test Q > 10000 && D < 5
 end
 
 @testset "spring layout layered" begin
@@ -25,5 +25,5 @@ end
     locs= Layouts.spring_layout_layered(graph, rand([0,200], nv(graph)); C=50)
     @test locs isa Vector{<:Layouts.Point{2}}
     Q, D = quality_of_layout(graph, locs, C)
-    @test Q > 1000 && D < 4
+    @test Q > 5000 && D < 4
 end

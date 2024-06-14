@@ -1,7 +1,6 @@
 """
     stressmajorize_layout(g::AbstractGraph;
-                               locs_x=2*rand(nv(g)) .- 1.0,
-                               locs_y=2*rand(nv(g)) .- 1.0,
+                               locs=rand_points_2d(nv(g)),
                                w=nothing,
                                C=2.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
@@ -17,8 +16,7 @@ Stress majorization layout for graph plotting, returns a vector of vertex locati
 * https://github.com/JuliaGraphs/GraphPlot.jl/blob/e97063729fd9047c4482070870e17ed1d95a3211/src/stress.jl
 """
 function stressmajorize_layout(g::AbstractGraph;
-                               locs_x=2*rand(nv(g)) .- 1.0,
-                               locs_y=2*rand(nv(g)) .- 1.0,
+                               locs=rand_points_2d(nv(g)),
                                w=nothing,
                                C=2.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
@@ -27,56 +25,54 @@ function stressmajorize_layout(g::AbstractGraph;
                                abstolx=1e-2,
                                verbose = false)
 
-    #δ = fill(1.0, nv(g), nv(g))
     δ = C .* hcat([gdistances(g, i) for i=1:nv(g)]...)
-    X0 = hcat(locs_x, locs_y)
 
     if w === nothing
         w = δ .^ -2
         w[.!isfinite.(w)] .= 0
     end
 
-    @assert size(X0, 1)==size(δ, 1)==size(δ, 2)==size(w, 1)==size(w, 2)
-    Lw = weightedlaplacian(w)
+    @assert length(locs)==size(δ, 1)==size(δ, 2)==size(w, 1)==size(w, 2)
+    locs = copy(locs)
+    Lw = weighted_laplacian(w)
     pinvLw = pinv(Lw)
-    newstress = stress(X0, δ, w)
+    newstress = stress(locs, δ, w)
     iter = 0
-    L = zeros(nv(g), nv(g))
-    local X
+    L = zeros(eltype(Lw), nv(g), nv(g))
+    local locs_new
     for outer iter = 1:maxiter
         #TODO the faster way is to drop the first row and col from the iteration
-        X = pinvLw * (LZ!(L, X0, δ, w)*X0)
-        @assert all(isfinite.(X))
-        newstress, oldstress = stress(X, δ, w), newstress
+        lz = LZ!(L, locs, δ, w)
+        locs_new = pinvLw * (lz * locs)
+        @assert all(isfinite.(locs_new))
+        newstress, oldstress = stress(locs_new, δ, w), newstress
         verbose && @info("""Iteration $iter
-        Change in coordinates: $(norm(X - X0))
+        Change in coordinates: $(norm(distance.(locs_new, locs)))
         Stress: $newstress (change: $(newstress-oldstress))
         """)
         if abs(newstress - oldstress) < reltols * newstress ||
                 abs(newstress - oldstress) < abstols ||
-                norm(X - X0) < abstolx
+                norm(distance.(locs_new, locs)) < abstolx
             break
         end
-        X0 = X
+        locs = locs_new
     end
     iter == maxiter && @warn("Maximum number of iterations reached without convergence")
-    return X[:,1], X[:,2]
+    return locs
 end
 
-function stress(X, d, w)
+function stress(locs::AbstractVector{Point{D, T}}, d, w) where {D, T}
     s = 0.0
-    n = size(X, 1)
+    n = length(locs)
     @assert n==size(d, 1)==size(d, 2)==size(w, 1)==size(w, 2)
     @inbounds for j=1:n, i=1:j-1
-        s += w[i, j] * (sqrt(sum(k->abs2(X[i,k] - X[j,k]), 1:size(X,2))) - d[i,j])^2
+        s += w[i, j] * (distance(locs[i], locs[j]) - d[i,j])^2
     end
-    @assert isfinite(s)
     return s
 end
 
-function weightedlaplacian(w)
+function weighted_laplacian(w::AbstractMatrix{T}) where T
     n = LinearAlgebra.checksquare(w)
-    T = eltype(w)
     Lw = zeros(T, n, n)
     for i=1:n
         D = zero(T)
@@ -90,28 +86,29 @@ function weightedlaplacian(w)
     return Lw
 end
 
-function LZ!(L, Z, d, w)
-    fill!(L, zero(eltype(L)))
-    n = size(Z, 1)
+function LZ!(L::AbstractMatrix{T}, locs::AbstractVector{Point{D, T2}}, d, w) where {D, T, T2}
+    @assert length(locs)==size(d, 1)==size(d, 2)==size(w, 1)==size(w, 2)
+    fill!(L, zero(T))
+    n = length(locs)
     @inbounds for i=1:n-1
-        D = 0.0
+        diag = zero(T)
         for j=i+1:n
-            nrmz = sqrt(sum(k->abs2(Z[i,k] - Z[j,k]), 1:size(Z,2)))
+            nrmz = distance(locs[i], locs[j])
             δ = w[i, j] * d[i, j]
             lij = -δ/max(nrmz, 1e-8)
             L[i, j] = lij
-            D -= lij
+            diag -= lij
         end
-        L[i, i] += D
+        L[i, i] += diag
     end
     @inbounds for i=2:n
-        D = 0.0
+        diag = zero(T)
         for j=1:i-1
             lij = L[j,i]
             L[i,j] = lij
-            D -= lij
+            diag -= lij
         end
-        L[i,i] += D
+        L[i,i] += diag
     end
     return L
 end

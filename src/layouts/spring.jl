@@ -1,6 +1,6 @@
 """
     spring_layout(g::AbstractGraph;
-                       locs=[randn(Point2D{Float64}) for i=1:nv(g)],
+                       locs=rand_points_2d(nv(g)),
                        C=2.0,   # the optimal vertex distance
                        niters=100,
                        α0=2.0,  # initial moving speed
@@ -14,7 +14,7 @@ Spring layout for graph plotting, returns a vector of vertex locations.
     where you can find more information about his function.
 """
 function spring_layout(g::AbstractGraph;
-                       locs=[randn(Point2D{Float64}) for i=1:nv(g)],
+                       locs=rand_points_2d(nv(g)),
                        C=2.0,   # the optimal vertex distance
                        niters=100,
                        α0=2.0,
