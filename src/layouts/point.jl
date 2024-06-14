@@ -2,18 +2,6 @@
     Point{D, T}
 
 A point in D-dimensional space, with coordinates of type T.
-
-# Examples
-```jldoctest
-julia> p1 = Point(1.0, 2.0)
-Point{2, Float64}((1.0, 2.0))
-
-julia> p2 = Point(3.0, 4.0)
-Point{2, Float64}((3.0, 4.0))
-
-julia> p1 + p2
-Point{2, Float64}((4.0, 6.0))
-```
 """
 struct Point{D, T <: Real}
     data::NTuple{D, T}

@@ -9,9 +9,18 @@ end
 
 @testset "stress layout" begin
     graph = random_regular_graph(100, 3)
-    C = 50
-    locs = Layouts.stressmajorize_layout(graph; C=50)
+    optimal_distance = 50
+    locs = Layouts.stressmajorize_layout(graph; optimal_distance)
     @test locs isa Vector{<:Layouts.Point{2}}
-    Q, D = quality_of_layout(graph, locs, C)
-    @test Q > 10000 && D < 1
+    Q = Layouts.quality_of_layout(graph, locs, optimal_distance)
+    @test Q.closeness > 10000 && Q.mean_distance_deviation < 1
+end
+
+@testset "stress layout layered" begin
+    graph = random_regular_graph(100, 3)
+    optimal_distance = 50
+    locs= Layouts.stressmajorize_layout_layered(graph, rand([0,200], nv(graph)); optimal_distance)
+    @test locs isa Vector{<:Layouts.Point{2}}
+    Q = Layouts.quality_of_layout(graph, locs, optimal_distance)
+    @test Q.closeness > 5000 && Q.mean_distance_deviation < 4
 end

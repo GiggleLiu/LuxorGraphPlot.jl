@@ -2,7 +2,7 @@ using LuxorGraphPlot, Graphs
 using Test, Documenter
 
 @testset "layouts" begin
-    include("layouts.jl")
+    include("layouts/layouts.jl")
 end
 
 @testset "graphplot" begin

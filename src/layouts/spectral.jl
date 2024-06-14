@@ -1,13 +1,13 @@
 """
-    spectral_layout(g::AbstractGraph, weight=nothing)
+    spectral_layout(g::AbstractGraph, weight=nothing; optimal_distance=50.0)
 
 Spectral layout for graph plotting, returns a vector of vertex locations.
 """
-function spectral_layout(g::AbstractGraph, weight=nothing; C=2.0)
+function spectral_layout(g::AbstractGraph, weight=nothing; optimal_distance=50.0, dimension=2)
     if nv(g) == 1
-        return [0.0], [0.0]
+        return [zero(Point{dimension, Float64})]
     elseif nv(g) == 2
-        return [0.0, C], [0.0, 0.0]
+        return [zero(Point{dimension, Float64}), Point(ntuple(i->i==1 ? Float64(optimal_distance) : 0.0, dimension))]
     end
 
     if weight === nothing
@@ -20,24 +20,24 @@ function spectral_layout(g::AbstractGraph, weight=nothing; C=2.0)
         if is_directed(g)
             A = A + transpose(A)
         end
-        return _spectral(A) .* 2C
+        return _spectral(A, dimension) .* 16optimal_distance
     else
         L = laplacian_matrix(g)
-        return _spectral(Matrix(L)) .* 2C
+        return _spectral(Matrix(L), dimension) .* 16optimal_distance
     end
 end
 
-function _spectral(L::Matrix)
+function _spectral(L::Matrix, dimension)
     eigenvalues, eigenvectors = eigen(L)
-    index = sortperm(eigenvalues)[2:3]
-    return eigenvectors[:, index[1]], eigenvectors[:, index[2]]
+    index = sortperm(eigenvalues)[2:1+dimension]
+    return Point.([eigenvectors[:, idx] for idx in index]...)
 end
 
-function _spectral(A)
+function _spectral(A, dimension)
     data = vec(sum(A, dims=1))
     D = Graphs.sparse(Base.OneTo(length(data)), Base.OneTo(length(data)), data)
     L = D - A
     eigenvalues, eigenvectors = Graphs.LinAlg.eigs(L, nev=3, which=Graphs.SR())
-    index = sortperm(real(eigenvalues))[2:3]
-    return real(eigenvectors[:, index[1]]), real(eigenvectors[:, index[2]])
+    index = sortperm(real(eigenvalues))[2:1+dimension]
+    return Point.([real.(eigenvectors[:, idx]) for idx in index]...)
 end

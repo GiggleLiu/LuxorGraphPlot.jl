@@ -62,29 +62,26 @@ function render_locs(graph, l::Layout)
     if layout == :auto && locs !== nothing
         return locs
     else
-        locs_x = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 1)
-        locs_y = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 2)
+        locs = locs === nothing ? nothing : [Layouts.Point(loc...) for loc in locs]
         if layout == :spring || layout == :auto
-            locs_x, locs_y = spring_layout(graph;
-                        C=optimal_distance,
-                        locs_x,
-                        locs_y,
+            locs = Layouts.spring_layout(graph;
+                        optimal_distance,
+                        locs,
                         mask=spring_mask === nothing ? trues(nv(graph)) : spring_mask   # mask for which to relocate
                     )
         elseif layout == :stress
-            locs_x, locs_y = stressmajorize_layout(graph;
-                        locs_x,
-                        locs_y,
-                        C=optimal_distance,
+            locs = Layouts.stressmajorize_layout(graph;
+                        locs,
+                        optimal_distance,
                         w=nothing,
                         maxiter = 400 * nv(graph)^2
                        )
         elseif layout == :spectral
-            locs_x, locs_y = spectral_layout(graph; C=optimal_distance)
+            locs = Layouts.spectral_layout(graph; optimal_distance)
         else
             error("either `locs` is nothing, or layout is not defined: $(layout)")
         end
-        return collect(zip(locs_x, locs_y))
+        return getfield.(locs, :data)
     end
 end
 render_locs(graph, locs::AbstractVector) = locs
