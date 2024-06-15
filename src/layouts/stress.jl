@@ -6,14 +6,14 @@ A layout algorithm based on stress majorization.
 ### Fields
 * `optimal_distance::Float64`: the optimal distance between vertices
 * `maxiter::Int`: the maximum number of iterations
-* `atol::Float64`: the absolute tolerance
+* `rtol::Float64`: the absolute tolerance
 * `initial_locs`: initial vertex locations
 * `mask`: boolean mask for which vertices to relocate
 """
 @kwdef struct StressLayout <: AbstractLayout
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
-    atol::Float64 = 1e-2
+    rtol::Float64 = 1e-2
     initial_locs = nothing
     mask=nothing
 end
@@ -22,7 +22,7 @@ function render_locs(graph, l::StressLayout)
     return stressmajorize_layout(graph;
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,
-                        atol=l.atol,
+                        rtol=l.rtol,
                         locs=l.initial_locs,
                         mask=l.mask
                     )
@@ -37,14 +37,14 @@ A layout algorithm based on stress majorization for layered graphs.
 * `zlocs::Vector{T}`: the z-axis locations
 * `optimal_distance::Float64`: the optimal distance between vertices
 * `maxiter::Int`: the maximum number of iterations
-* `atol::Float64`: the absolute tolerance
+* `rtol::Float64`: the absolute tolerance
 * `aspect_ratio::Float64`: the aspect ratio of the z-axis
 """
 @kwdef struct StressLayoutLayered{T} <: AbstractLayout
     zlocs::Vector{T}
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
-    atol::Float64 = 1e-2
+    rtol::Float64 = 1e-2
     aspect_ratio::Float64 = 0.2
 end
 
@@ -52,7 +52,7 @@ function render_locs(graph, l::StressLayoutLayered)
     return stressmajorize_layout_layered(graph, l.zlocs;
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,
-                        atol=l.atol,
+                        rtol=l.rtol,
                         aspect_ratio=l.aspect_ratio,
                     )
 end
@@ -63,7 +63,7 @@ end
                                w=nothing,
                                optimal_distance=2.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
-                               atol=1e-2,
+                               rtol=1e-2,
                                )
 
 Stress majorization layout for graph plotting, returns a vector of vertex locations.
@@ -76,7 +76,7 @@ function stressmajorize_layout(g::AbstractGraph;
                                locs=nothing,
                                w=nothing,
                                maxiter = 400 * nv(g)^2,
-                               atol=1e-2,
+                               rtol=1e-2,
                                mask=nothing,
                                )
 
@@ -106,7 +106,7 @@ function stressmajorize_layout(g::AbstractGraph;
         Change in coordinates: $(sum(distance.(locs_new, locs))/length(locs))
         Stress: $newstress (change: $(newstress-oldstress))
         """
-        abs(newstress - oldstress) < atol && break
+        isapprox(newstress, oldstress; rtol) && break
         locs[mask] = locs_new[mask]
     end
     iter == maxiter && @warn("Maximum number of iterations reached without convergence")
@@ -117,7 +117,7 @@ function stressmajorize_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
                                w=nothing,
                                optimal_distance=50.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
-                               atol=1e-2,
+                               rtol=1e-2,
                                aspect_ratio=0.2,
                                )
 
@@ -149,7 +149,7 @@ function stressmajorize_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
         Change in coordinates: $(sum(distance.(locs_new, locs)/length(locs)))
         Stress: $newstress (change: $(newstress-oldstress))
         """
-        abs(newstress - oldstress) < atol && break
+        isapprox(newstress, oldstress; rtol) && break
         locs = set_z.(locs_new, zlocs)
     end
     iter == maxiter && @warn("Maximum number of iterations reached without convergence")
