@@ -1,8 +1,67 @@
 """
+    SpringLayout <: AbstractLayout
+
+A layout algorithm based on a spring model.
+
+### Fields
+* `optimal_distance::Float64`: the optimal distance between vertices
+* `maxiter::Int`: the maximum number of iterations
+* `α0::Float64`: the initial moving speed
+* `initial_locs`: initial vertex locations
+* `mask`: boolean mask for which vertices to relocate
+"""
+@kwdef struct SpringLayout <: AbstractLayout
+    optimal_distance::Float64 = 50.0
+    maxiter::Int = 100
+    α0::Float64 = 2.0  # initial moving speed
+    initial_locs = nothing
+    mask=nothing
+end
+
+function render_locs(graph, l::SpringLayout)
+    return spring_layout(graph;
+                        optimal_distance=l.optimal_distance,
+                        maxiter=l.maxiter,
+                        α0=l.α0,
+                        locs=l.initial_locs,
+                        mask=l.mask
+                    )
+end
+
+"""
+    SpringLayoutLayered <: AbstractLayout
+
+A layout algorithm based on a spring model for layered graphs.
+
+### Fields
+* `zlocs::Vector{T}`: the z-axis locations
+* `optimal_distance::Float64`: the optimal distance between vertices
+* `maxiter::Int`: the maximum number of iterations
+* `α0::Float64`: the initial moving speed
+* `aspect_ratio::Float64`: the aspect ratio of the z-axis
+"""
+@kwdef struct SpringLayoutLayered{T} <: AbstractLayout
+    zlocs::Vector{T}
+    optimal_distance::Float64 = 50.0
+    maxiter::Int = 100
+    α0::Float64 = 2.0
+    aspect_ratio::Float64 = 0.2
+end
+
+function render_locs(graph, l::SpringLayoutLayered)
+    return spring_layout_layered(graph, l.zlocs;
+                        optimal_distance=l.optimal_distance,
+                        maxiter=l.maxiter,
+                        α0=l.α0,
+                        aspect_ratio=l.aspect_ratio,
+                    )
+end
+
+"""
     spring_layout(g::AbstractGraph;
                        locs=nothing,
                        optimal_distance=50.0,   # the optimal vertex distance
-                       niters=100,
+                       maxiter=100,
                        α0=2.0,  # initial moving speed
                        mask::AbstractVector{Bool}=trues(nv(g))   # mask for which to relocate
                        )
@@ -16,18 +75,19 @@ Spring layout for graph plotting, returns a vector of vertex locations.
 function spring_layout(g::AbstractGraph;
                        locs=nothing,
                        optimal_distance=50.0,   # the optimal vertex distance
-                       niters=100,
+                       maxiter=100,
                        α0=2.0,
-                       mask::AbstractVector{Bool}=trues(nv(g))   # mask for which to relocate
+                       mask=nothing,
                        )
-    locs = locs === nothing ? rand_points_2d(nv(g)) : locs ./ optimal_distance
-    @assert nv(g) == length(locs)
+    locs = locs === nothing ? rand_points_2d(nv(g)) : Point.(locs) ./ optimal_distance
+    mask = mask === nothing ? trues(nv(g)) : mask
+    @assert nv(g) == length(locs) "number of vertices in graph and locs must be the same, got $(nv(g)) and $(length(locs))"
 
     # Store forces and apply at end of iteration all at once
     force = zero(locs)
 
-    # Iterate niters times
-    @inbounds for iter = 1:niters
+    # Iterate maxiter times
+    @inbounds for iter = 1:maxiter
         # Cool down
         temp = α0 / iter
         spring_step!(g, locs, force; optimal_distance=1.0, temp, mask)
@@ -40,9 +100,9 @@ end
 """
     spring_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
                        optimal_distance=50.0,   # the optimal vertex distance
-                       niters=100,
+                       maxiter=100,
                        α0=2.0,  # initial moving speed
-                       mask::AbstractVector{Bool}=trues(length(zlocs))   # mask for which to relocate
+                       aspect_ratio=0.2,
                        )
 
 Spring layout for graph plotting, returns a vector of vertex locations.
@@ -53,22 +113,22 @@ Spring layout for graph plotting, returns a vector of vertex locations.
 """
 function spring_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
                        optimal_distance=50.0,   # the optimal vertex distance
-                       niters=100,
+                       maxiter=100,
                        α0=2.0,
                        aspect_ratio=0.2,
-                       mask::AbstractVector{Bool}=trues(length(zlocs))   # mask for which to relocate
                        )
-    @assert nv(g) == length(zlocs)
+    @assert nv(g) == length(zlocs) "number of vertices in graph and zlocs must be the same, got $(nv(g)) and $(length(zlocs))"
     locs=[randn(Point3D{Float64}) for _=1:nv(g)]
     zlocs = zlocs ./ optimal_distance
     set_z(p::Point3D{T}, zloc) where T = Point(p[1], p[2], T(zloc))
     locs .= set_z.(locs, zlocs)
+    mask=trues(length(zlocs))   # mask for which to relocate
 
     # Store forces and apply at end of iteration all at once
     force = zero(locs)
 
-    # Iterate niters times
-    @inbounds for iter = 1:niters
+    # Iterate maxiter times
+    @inbounds for iter = 1:maxiter
         # Cool down
         temp = α0 / iter
         spring_step!(g, locs, force; optimal_distance=1.0, temp, mask)

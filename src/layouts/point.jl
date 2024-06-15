@@ -11,6 +11,7 @@ const Point3D{T} = Point{3, T}
 dimension(::Point{D}) where D = D
 Base.eltype(::Type{Point{D, T}}) where {D, T} = T
 Point(x::Real...) = Point((x...,))
+Point(x::Point) = x
 LinearAlgebra.dot(x::Point, y::Point) = mapreduce(*, +, x.data .* y.data)
 LinearAlgebra.norm(x::Point) = sqrt(sum(abs2, x.data))
 Base.:*(x::Real, y::Point) = Point(x .* y.data)

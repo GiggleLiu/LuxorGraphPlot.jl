@@ -34,7 +34,7 @@ end
 
 @testset "gallery" begin
     graph = smallgraph(:petersen)
-    locs = render_locs(graph, Layout(:stress))
+    locs = render_locs(graph, StressLayout())
     matrix = [GraphViz(graph, locs; vertex_colors=[rand(Luxor.RGB) for i=1:10], edge_colors=[rand(Luxor.RGB) for i=1:15]) for i=1:2, j=1:4]
     # gallery
     @test show_gallery(matrix) isa Drawing 

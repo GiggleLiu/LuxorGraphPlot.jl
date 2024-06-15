@@ -25,69 +25,6 @@ const VIZHELP = """
 * `texts` is a vector of strings for labeling vertices.
 """
 
-#####
-
-"""
-    Layout(layout=:spring; optimal_distance=20.0, locs=nothing, spring_mask=nothing)
-
-The struct for specifying the layout of a graph. Use [`render_locs`](@ref) to render the vertex locations.
-
-Positional arguments
--------------------------------
-* `layout` is one of [:auto, :spring, :stress, :spectral], the default value is `:spring`.
-
-Keyword arguments
--------------------------------
-* `optimal_distance` is a optimal distance parameter for `spring` optimizer.
-* `locs` is a vector of tuples for specifying the vertex locations.
-* `spring_mask` specfies which location is optimizable for `spring` optimizer.
-"""
-struct Layout
-    layout::Symbol
-    optimal_distance::Float64
-    locs
-    spring_mask
-end
-function Layout(layout=:spring; optimal_distance=50.0, locs=nothing, spring_mask=nothing)
-    return Layout(layout, optimal_distance, locs, spring_mask)
-end
-
-"""
-    render_locs(graph, layout::Layout)
-
-Render the vertex locations for a graph from a [`Layout`](@ref) instance.
-"""
-function render_locs(graph, l::Layout)
-    optimal_distance, locs, spring_mask, layout = l.optimal_distance, l.locs, l.spring_mask, l.layout
-    if layout == :auto && locs !== nothing
-        return locs
-    else
-        locs = locs === nothing ? nothing : [Layouts.Point(loc...) for loc in locs]
-        if layout == :spring || layout == :auto
-            locs = Layouts.spring_layout(graph;
-                        optimal_distance,
-                        locs,
-                        mask=spring_mask === nothing ? trues(nv(graph)) : spring_mask   # mask for which to relocate
-                    )
-        elseif layout == :stress
-            locs = Layouts.stressmajorize_layout(graph;
-                        locs,
-                        optimal_distance,
-                        w=nothing,
-                        maxiter = 400 * nv(graph)^2
-                       )
-        elseif layout == :spectral
-            locs = Layouts.spectral_layout(graph; optimal_distance)
-        else
-            error("either `locs` is nothing, or layout is not defined: $(layout)")
-        end
-        return getfield.(locs, :data)
-    end
-end
-render_locs(graph, locs::AbstractVector) = locs
-render_locs(graph, locs::AbstractVector{<:Layouts.Point}) = getfield.(locs, :data)
-
-
 """
     GraphDisplayConfig
 
@@ -165,8 +102,9 @@ Base.@kwdef mutable struct GraphViz
     edge_colors = nothing
     texts = nothing
 end
-function GraphViz(graph::SimpleGraph, locs=Layout(:spring); kwargs...)
-    return GraphViz(; locs=render_locs(graph, locs), edges=[(src(e), dst(e)) for e in edges(graph)], kwargs...)
+function GraphViz(graph::SimpleGraph, locs=SpringLayout(); kwargs...)
+    rlocs = getfield.(render_locs(graph, locs), :data)
+    return GraphViz(; locs=rlocs, edges=[(src(e), dst(e)) for e in edges(graph)], kwargs...)
 end
 get_bounding_box(g::GraphViz) = (minimum(getindex.(g.locs, 1)), maximum(getindex.(g.locs, 1)), minimum(getindex.(g.locs, 2)), maximum(getindex.(g.locs, 2)))
 
@@ -215,7 +153,7 @@ julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue"
 ```
 """
 show_graph(graph::GraphViz; kwargs...) = show_graph(x->nothing, graph; kwargs...)
-show_graph(graph::SimpleGraph, locs=Layout(:spring); kwargs...) = show_graph(x->nothing, graph, locs; kwargs...)
+show_graph(graph::SimpleGraph, locs=SpringLayout(); kwargs...) = show_graph(x->nothing, graph, locs; kwargs...)
 function show_graph(f, g::GraphViz;
         format = :svg,
         filename = nothing,
@@ -255,7 +193,7 @@ function diagram(locs, edges; vertex_sizes=nothing, vertex_shapes=nothing, confi
     end
     return GraphDiagram(nodes, edgs)
 end
-function show_graph(f, graph::SimpleGraph, locs=Layout(:spring);
+function show_graph(f, graph::SimpleGraph, locs=SpringLayout();
         vertex_shapes = nothing,
         vertex_sizes = nothing,
         vertex_colors = nothing,

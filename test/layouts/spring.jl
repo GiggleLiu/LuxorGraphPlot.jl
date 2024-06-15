@@ -20,3 +20,26 @@ end
     Q = Layouts.quality_of_layout(graph, locs, optimal_distance)
     @test Q.closeness > 5000 && Q.mean_distance_deviation < 4
 end
+
+@testset "data types" begin
+    graph = random_regular_graph(100, 3)
+    optimal_distance = 50.0
+    # without initial locations
+    layout = Layouts.SpringLayout(; optimal_distance)
+    @test layout isa Layouts.SpringLayout
+    @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
+
+    # with initial locations
+    layout = Layouts.SpringLayout(; optimal_distance, initial_locs=Layouts.rand_points_2d(100))
+    @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
+
+    # with initial locations and mask
+    layout = Layouts.SpringLayout(; optimal_distance, initial_locs=Layouts.rand_points_2d(100), mask=trues(100))
+    @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
+
+    # layered
+    zlocs = rand([0,200], nv(graph))
+    layout = Layouts.SpringLayoutLayered(; zlocs, optimal_distance)
+    @test layout isa Layouts.SpringLayoutLayered
+    @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
+end

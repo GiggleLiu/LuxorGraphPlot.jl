@@ -1,13 +1,69 @@
 """
+    StressLayout <: AbstractLayout
+
+A layout algorithm based on stress majorization.
+
+### Fields
+* `optimal_distance::Float64`: the optimal distance between vertices
+* `maxiter::Int`: the maximum number of iterations
+* `atol::Float64`: the absolute tolerance
+* `initial_locs`: initial vertex locations
+* `mask`: boolean mask for which vertices to relocate
+"""
+@kwdef struct StressLayout <: AbstractLayout
+    optimal_distance::Float64 = 50.0
+    maxiter::Int = 100
+    atol::Float64 = 1e-2
+    initial_locs = nothing
+    mask=nothing
+end
+
+function render_locs(graph, l::StressLayout)
+    return stressmajorize_layout(graph;
+                        optimal_distance=l.optimal_distance,
+                        maxiter=l.maxiter,
+                        atol=l.atol,
+                        locs=l.initial_locs,
+                        mask=l.mask
+                    )
+end
+
+"""
+    StressLayoutLayered <: AbstractLayout
+
+A layout algorithm based on stress majorization for layered graphs.
+
+### Fields
+* `zlocs::Vector{T}`: the z-axis locations
+* `optimal_distance::Float64`: the optimal distance between vertices
+* `maxiter::Int`: the maximum number of iterations
+* `atol::Float64`: the absolute tolerance
+* `aspect_ratio::Float64`: the aspect ratio of the z-axis
+"""
+@kwdef struct StressLayoutLayered{T} <: AbstractLayout
+    zlocs::Vector{T}
+    optimal_distance::Float64 = 50.0
+    maxiter::Int = 100
+    atol::Float64 = 1e-2
+    aspect_ratio::Float64 = 0.2
+end
+
+function render_locs(graph, l::StressLayoutLayered)
+    return stressmajorize_layout_layered(graph, l.zlocs;
+                        optimal_distance=l.optimal_distance,
+                        maxiter=l.maxiter,
+                        atol=l.atol,
+                        aspect_ratio=l.aspect_ratio,
+                    )
+end
+
+"""
     stressmajorize_layout(g::AbstractGraph;
                                locs=rand_points_2d(nv(g)),
                                w=nothing,
                                optimal_distance=2.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
-                               abstols=1e-2,
-                               reltols=1e-2,
-                               abstolx=1e-2,
-                               verbose = false
+                               atol=1e-2,
                                )
 
 Stress majorization layout for graph plotting, returns a vector of vertex locations.
@@ -20,12 +76,12 @@ function stressmajorize_layout(g::AbstractGraph;
                                locs=nothing,
                                w=nothing,
                                maxiter = 400 * nv(g)^2,
-                               abstols=1e-2,
-                               reltols=1e-2,
-                               abstolx=1e-2,
-                               verbose = false)
+                               atol=1e-2,
+                               mask=nothing,
+                               )
 
-    locs = locs === nothing ? rand_points_2d(nv(g)) .* optimal_distance : locs
+    locs = locs === nothing ? rand_points_2d(nv(g)) .* optimal_distance : Point.(locs)
+    mask = mask === nothing ? trues(nv(g)) : mask
     δ = optimal_distance .* hcat([gdistances(g, i) for i=1:nv(g)]...)
 
     if w === nothing
@@ -46,16 +102,12 @@ function stressmajorize_layout(g::AbstractGraph;
         locs_new = pinvLw * (lz * locs)
         @assert all(isfinite.(locs_new))
         newstress, oldstress = stress(locs_new, δ, w), newstress
-        verbose && @info("""Iteration $iter
-        Change in coordinates: $(norm(distance.(locs_new, locs)))
+        @debug """Iteration $iter
+        Change in coordinates: $(sum(distance.(locs_new, locs))/length(locs))
         Stress: $newstress (change: $(newstress-oldstress))
-        """)
-        if abs(newstress - oldstress) < reltols * newstress ||
-                abs(newstress - oldstress) < abstols ||
-                norm(distance.(locs_new, locs)) < abstolx
-            break
-        end
-        locs = locs_new
+        """
+        abs(newstress - oldstress) < atol && break
+        locs[mask] = locs_new[mask]
     end
     iter == maxiter && @warn("Maximum number of iterations reached without convergence")
     return locs
@@ -65,11 +117,9 @@ function stressmajorize_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
                                w=nothing,
                                optimal_distance=50.0,   # the optimal vertex distance
                                maxiter = 400 * nv(g)^2,
-                               abstols=1e-2,
-                               reltols=1e-2,
-                               abstolx=1e-2,
+                               atol=1e-2,
                                aspect_ratio=0.2,
-                               verbose = false)
+                               )
 
     @assert length(zlocs)==nv(g) "The number of layers must be equal to the number of vertices in the graph, got: $(length(zlocs)) and $(nv(g))"
     locs=[randn(Point3D{Float64}) for _=1:nv(g)]
@@ -95,15 +145,11 @@ function stressmajorize_layout_layered(g::AbstractGraph, zlocs::AbstractVector;
         locs_new = pinvLw * (lz * locs)
         @assert all(isfinite.(locs_new))
         newstress, oldstress = stress(locs_new, δ, w), newstress
-        verbose && @info("""Iteration $iter
-        Change in coordinates: $(norm(distance.(locs_new, locs)))
+        @debug """Iteration $iter
+        Change in coordinates: $(sum(distance.(locs_new, locs)/length(locs)))
         Stress: $newstress (change: $(newstress-oldstress))
-        """)
-        if abs(newstress - oldstress) < reltols * newstress ||
-                abs(newstress - oldstress) < abstols ||
-                norm(distance.(locs_new, locs)) < abstolx
-            break
-        end
+        """
+        abs(newstress - oldstress) < atol && break
         locs = set_z.(locs_new, zlocs)
     end
     iter == maxiter && @warn("Maximum number of iterations reached without convergence")

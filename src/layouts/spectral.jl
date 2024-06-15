@@ -1,4 +1,25 @@
 """
+    SpectralLayout <: AbstractLayout
+
+A layout algorithm based on spectral graph theory.
+
+### Fields
+* `optimal_distance::Float64`: the optimal distance between vertices
+* `dimension::Int`: the number of dimensions
+"""
+@kwdef struct SpectralLayout <: AbstractLayout
+    optimal_distance::Float64 = 50.0
+    dimension::Int = 2
+end
+
+function render_locs(graph, l::SpectralLayout)
+    return spectral_layout(graph;
+                        optimal_distance=l.optimal_distance,
+                        dimension=l.dimension
+                    )
+end
+
+"""
     spectral_layout(g::AbstractGraph, weight=nothing; optimal_distance=50.0)
 
 Spectral layout for graph plotting, returns a vector of vertex locations.
