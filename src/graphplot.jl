@@ -25,71 +25,6 @@ const VIZHELP = """
 * `texts` is a vector of strings for labeling vertices.
 """
 
-#####
-
-"""
-    Layout(layout=:spring; optimal_distance=20.0, locs=nothing, spring_mask=nothing)
-
-The struct for specifying the layout of a graph. Use [`render_locs`](@ref) to render the vertex locations.
-
-Positional arguments
--------------------------------
-* `layout` is one of [:auto, :spring, :stress, :spectral], the default value is `:spring`.
-
-Keyword arguments
--------------------------------
-* `optimal_distance` is a optimal distance parameter for `spring` optimizer.
-* `locs` is a vector of tuples for specifying the vertex locations.
-* `spring_mask` specfies which location is optimizable for `spring` optimizer.
-"""
-struct Layout
-    layout::Symbol
-    optimal_distance::Float64
-    locs
-    spring_mask
-end
-function Layout(layout=:spring; optimal_distance=50.0, locs=nothing, spring_mask=nothing)
-    return Layout(layout, optimal_distance, locs, spring_mask)
-end
-
-"""
-    render_locs(graph, layout::Layout)
-
-Render the vertex locations for a graph from a [`Layout`](@ref) instance.
-"""
-function render_locs(graph, l::Layout)
-    optimal_distance, locs, spring_mask, layout = l.optimal_distance, l.locs, l.spring_mask, l.layout
-    if layout == :auto && locs !== nothing
-        return locs
-    else
-        locs_x = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 1)
-        locs_y = locs === nothing ? [2*rand()-1.0 for i=1:nv(graph)] : getindex.(locs, 2)
-        if layout == :spring || layout == :auto
-            locs_x, locs_y = spring_layout(graph;
-                        C=optimal_distance,
-                        locs_x,
-                        locs_y,
-                        mask=spring_mask === nothing ? trues(nv(graph)) : spring_mask   # mask for which to relocate
-                    )
-        elseif layout == :stress
-            locs_x, locs_y = stressmajorize_layout(graph;
-                        locs_x,
-                        locs_y,
-                        C=optimal_distance,
-                        w=nothing,
-                        maxiter = 400 * nv(graph)^2
-                       )
-        elseif layout == :spectral
-            locs_x, locs_y = spectral_layout(graph; C=optimal_distance)
-        else
-            error("either `locs` is nothing, or layout is not defined: $(layout)")
-        end
-        return collect(zip(locs_x, locs_y))
-    end
-end
-render_locs(graph, locs::AbstractVector) = locs
-
-
 """
     GraphDisplayConfig
 
@@ -167,8 +102,9 @@ Base.@kwdef mutable struct GraphViz
     edge_colors = nothing
     texts = nothing
 end
-function GraphViz(graph::SimpleGraph, locs=Layout(:spring); kwargs...)
-    return GraphViz(; locs=render_locs(graph, locs), edges=[(src(e), dst(e)) for e in edges(graph)], kwargs...)
+function GraphViz(graph::SimpleGraph, locs=SpringLayout(); kwargs...)
+    rlocs = getfield.(render_locs(graph, locs), :data)
+    return GraphViz(; locs=rlocs, edges=[(src(e), dst(e)) for e in edges(graph)], kwargs...)
 end
 get_bounding_box(g::GraphViz) = (minimum(getindex.(g.locs, 1)), maximum(getindex.(g.locs, 1)), minimum(getindex.(g.locs, 2)), maximum(getindex.(g.locs, 2)))
 
@@ -192,7 +128,7 @@ Positional arguments
 -----------------------------
 * `f` is a function that returns extra `Luxor` plotting statements.
 * `graph` is a graph instance.
-* `locs` is a vector of tuples for specifying the vertex locations, or a [`Layout`](@ref) instance.
+* `locs` is a vector of tuples for specifying the vertex locations, or a [`AbstractLayout`](@ref) instance.
 
 Keyword arguments
 -----------------------------
@@ -217,7 +153,7 @@ julia> show_graph(smallgraph(:petersen); format=:png, vertex_colors=rand(["blue"
 ```
 """
 show_graph(graph::GraphViz; kwargs...) = show_graph(x->nothing, graph; kwargs...)
-show_graph(graph::SimpleGraph, locs=Layout(:spring); kwargs...) = show_graph(x->nothing, graph, locs; kwargs...)
+show_graph(graph::SimpleGraph, locs=SpringLayout(); kwargs...) = show_graph(x->nothing, graph, locs; kwargs...)
 function show_graph(f, g::GraphViz;
         format = :svg,
         filename = nothing,
@@ -227,7 +163,7 @@ function show_graph(f, g::GraphViz;
         padding_bottom = 10,
         config = GraphDisplayConfig(),
     )
-    diag = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
+    diag = diagram(g.locs, g.edges; vertex_shapes=g.vertex_shapes, vertex_sizes=g.vertex_sizes, config)
     with_nodes(diag; format, filename, padding_bottom, padding_left, padding_right, padding_top, background=config.background) do
         f(diag)
         show_diagram(diag; config,
@@ -257,7 +193,7 @@ function diagram(locs, edges; vertex_sizes=nothing, vertex_shapes=nothing, confi
     end
     return GraphDiagram(nodes, edgs)
 end
-function show_graph(f, graph::SimpleGraph, locs=Layout(:spring);
+function show_graph(f, graph::SimpleGraph, locs=SpringLayout();
         vertex_shapes = nothing,
         vertex_sizes = nothing,
         vertex_colors = nothing,
@@ -286,19 +222,16 @@ function show_diagram(diag::GraphDiagram;
             vertex_text_colors,
             texts,
             edge_colors)
-    # edges
-    setline(config.edge_line_width)
-    setdash(config.edge_line_style)
-    for (k, e) in enumerate(diag.edges)
-        setcolor(_get(edge_colors, k, config.edge_color))
-        stroke(e)
-    end
-    # vertices
+    render_edges(diag.edges, config; edge_colors)
+    render_nodes(diag.nodes, config; texts, vertex_colors, vertex_stroke_colors, vertex_text_colors)
+end
+
+function render_nodes(nodes::AbstractVector, config::GraphDisplayConfig; texts=nothing, vertex_colors=nothing, vertex_stroke_colors=nothing, vertex_text_colors=nothing)
     setline(config.vertex_line_width)
     setdash(config.vertex_line_style)
     Luxor.fontsize(config.fontsize)
     !isempty(config.fontface) && Luxor.fontface(config.fontface)
-    for (i, node) in enumerate(diag.nodes)
+    for (i, node) in enumerate(nodes)
         setcolor(_get(vertex_colors, i, config.vertex_color))
         fill(node)
         setcolor(_get(vertex_stroke_colors, i, config.vertex_stroke_color))
@@ -310,6 +243,16 @@ function show_diagram(diag::GraphDiagram;
         end
     end
 end
+
+function render_edges(edges::AbstractVector, config::GraphDisplayConfig; edge_colors=nothing)
+    setline(config.edge_line_width)
+    setdash(config.edge_line_style)
+    for (k, e) in enumerate(edges)
+        setcolor(_get(edge_colors, k, config.edge_color))
+        stroke(e)
+    end
+end
+
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
 
@@ -365,7 +308,7 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
     Luxor.background(config.background)
     for i=1:m, j=1:n
         g = stores[i, j]
-        diag_ = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
+        diag_ = diagram(g.locs, g.edges; vertex_shapes=g.vertex_shapes, vertex_sizes=g.vertex_sizes, config)
         diag = offset(diag_, (xoffsets[j], yoffsets[i]))
         f(diag)
         show_diagram(diag; config,

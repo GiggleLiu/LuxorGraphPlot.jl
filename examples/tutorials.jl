@@ -55,17 +55,17 @@ show_graph(graph; format=:svg)
 
 # The default layout is `:auto`, which uses `:spring` if `locs` is `nothing`.
 
-show_graph(graph, Layout(:spring))
+show_graph(graph, SpringLayout())
 
-show_graph(graph, Layout(:stress))
+show_graph(graph, StressLayout())
 
-show_graph(graph, Layout(:spectral))
+show_graph(graph, SpectralLayout())
 
 # ## Show a gallery
 
 # One can use a boolean vector to represent boolean variables on a vertex or an edge.
 
-locs = render_locs(graph, Layout(:spring))
+locs = render_locs(graph, SpringLayout())
 matrix = [GraphViz(graph, locs; vertex_colors=[rand(Luxor.RGB) for i=1:10],
     edge_colors=[rand(Luxor.RGB) for i=1:15]) for i=1:2, j=1:4]
 show_gallery(matrix; format=:png, padding_left=20, padding_right=20, padding_top=20, padding_bottom=20)

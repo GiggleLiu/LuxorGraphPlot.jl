@@ -16,16 +16,18 @@ const OPTIONAL_PARAMS = Dict(
     :dot => Dict{Symbol, Any}()
 )
 
+dict2md(d::Dict) = join(["- `$(k)`: $(v)" for (k, v) in d], "\n")
+
 """
     Node(shape::Symbol, loc; props...)
 
 Create a node with a shape and a location. The shape can be `:circle`, `:ellipse`, `:box`, `:polygon`, `:line` or `:dot`.
 
 ### Required Keyword Arguments
-$REQUIRED_PARAMS
+$(dict2md(REQUIRED_PARAMS))
 
 ### Optional Keyword Arguments
-$OPTIONAL_PARAMS
+$(dict2md(OPTIONAL_PARAMS))
 """
 struct Node
     shape::Symbol
@@ -304,6 +306,15 @@ function boundary(n::Node, angle::Real)
         _ => error("can not get boundary point for shape: $(n.shape)")
     end
 end
+
+bottomalign(n::Node, target::Node) = bottomalign(n, target.loc[1])
+bottomalign(n::Node, x::Real) = dotnode(x, bottom(n).loc[2])
+topalign(n::Node, target::Node) = topalign(n, target.loc[1])
+topalign(n::Node, x::Real) = dotnode(x, top(n).loc[2])
+leftalign(n::Node, target::Node) = topalign(n, target.loc[2])
+leftalign(n::Node, y::Real) = dotnode(left(n).loc[1], y)
+rightalign(n::Node, target::Node) = rightalign(n, target.loc[2])
+rightalign(n::Node, y::Real) = dotnode(right(n).loc[1], y)
 
 # get the path of a node
 function getpath(n::Node)
