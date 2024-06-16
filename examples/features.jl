@@ -2,12 +2,13 @@ using LuxorGraphPlot, LuxorGraphPlot.Luxor
 using LuxorGraphPlot.TensorNetwork
 
 # ## Node styles
-nodestore() do ns
+# We a combination of [`nodestore`](@ref) and [`with_nodes`](@ref) to draw nodes with automatically inferred bounding boxes.
+nodestore() do ns  # store nodes in the nodestore (used to infer the bounding box)
     a = circle!((0, 0), 30)
     b = ellipse!((100, 0), 60, 40)
     c = box!((200, 0), 50, 50; smooth=10)
     d = polygon!([rotatepoint(Point(30, 0), i*π/3) for i=1:6] .+ Ref(Point(300, 0)); smooth=5)
-    with_nodes() do
+    with_nodes(ns) do  # the context manager to draw nodes
         fontsize(6)
         for (node, shape) in [(a, "circle"), (b, "ellipse"), (c, "box"), (d, "polygon")]
             stroke(node)
@@ -27,7 +28,7 @@ nodestore() do ns
     box2s = offset.(box1s, Ref(a2.loc-a1.loc))
     append!(ns, box1s)
     append!(ns, box2s)
-    with_nodes() do
+    with_nodes(ns) do
         fontsize(14)
         stroke(a1)
         stroke(a2)

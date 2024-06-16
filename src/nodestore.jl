@@ -1,4 +1,10 @@
 abstract type AbstractNodeStore end
+
+"""
+    NodeStore <: AbstractNodeStore
+
+A collection of nodes, which is used to infer the bounding box of a drawing.
+"""
 struct NodeStore <: AbstractNodeStore
     nodes::Vector{Node}
 end
@@ -63,7 +69,8 @@ end
 """
     nodestore(f)
 
-Create a nodestore context and execute the function `f` with the nodestore as argument.
+Create a [`NodeStore`](@ref) context, such that [`box!`](@ref), [`circle!`](@ref), [`polygon!`](@ref), [`dot!`](@ref) and [`line!`](@ref) will add nodes to the nodestore.
+The nodestore is passed to the function `f` as an argument.
 
 ### Example
 ```julia

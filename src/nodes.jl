@@ -16,16 +16,18 @@ const OPTIONAL_PARAMS = Dict(
     :dot => Dict{Symbol, Any}()
 )
 
+dict2md(d::Dict) = join(["- `$(k)`: $(v)" for (k, v) in d], "\n")
+
 """
     Node(shape::Symbol, loc; props...)
 
 Create a node with a shape and a location. The shape can be `:circle`, `:ellipse`, `:box`, `:polygon`, `:line` or `:dot`.
 
 ### Required Keyword Arguments
-$REQUIRED_PARAMS
+$(dict2md(REQUIRED_PARAMS))
 
 ### Optional Keyword Arguments
-$OPTIONAL_PARAMS
+$(dict2md(OPTIONAL_PARAMS))
 """
 struct Node
     shape::Symbol
