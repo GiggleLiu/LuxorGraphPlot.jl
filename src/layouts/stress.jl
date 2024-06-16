@@ -9,13 +9,15 @@ A layout algorithm based on stress majorization.
 * `rtol::Float64`: the absolute tolerance
 * `initial_locs`: initial vertex locations
 * `mask`: boolean mask for which vertices to relocate
+* `meta::Dict{Symbol, Any}`: graph dependent meta information, including
+    * `initial_locs`: initial vertex locations
+    * `mask`: boolean mask for which vertices to relocate
 """
 @kwdef struct StressLayout <: AbstractLayout
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
     rtol::Float64 = 1e-2
-    initial_locs = nothing
-    mask=nothing
+    meta::Dict{Symbol, Any} = Dict{Symbol, Any}()
 end
 
 function render_locs(graph, l::StressLayout)
@@ -23,8 +25,8 @@ function render_locs(graph, l::StressLayout)
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,
                         rtol=l.rtol,
-                        locs=l.initial_locs,
-                        mask=l.mask
+                        locs=get(l.meta, :initial_locs, nothing),
+                        mask=get(l.meta, :mask, nothing),
                     )
 end
 

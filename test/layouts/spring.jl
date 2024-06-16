@@ -30,11 +30,11 @@ end
     @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
 
     # with initial locations
-    layout = Layouts.SpringLayout(; optimal_distance, initial_locs=Layouts.rand_points_2d(100))
+    layout = Layouts.SpringLayout(; optimal_distance, meta=Dict(:initial_locs=>Layouts.rand_points_2d(100)))
     @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
 
     # with initial locations and mask
-    layout = Layouts.SpringLayout(; optimal_distance, initial_locs=Layouts.rand_points_2d(100), mask=trues(100))
+    layout = Layouts.SpringLayout(; optimal_distance, meta=Dict(:initial_locs=>Layouts.rand_points_2d(100), :mask=>trues(100)))
     @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
 
     # layered

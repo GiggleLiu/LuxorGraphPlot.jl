@@ -7,15 +7,15 @@ A layout algorithm based on a spring model.
 * `optimal_distance::Float64`: the optimal distance between vertices
 * `maxiter::Int`: the maximum number of iterations
 * `α0::Float64`: the initial moving speed
-* `initial_locs`: initial vertex locations
-* `mask`: boolean mask for which vertices to relocate
+* `meta::Dict{Symbol, Any}`: graph dependent meta information, including
+    * `initial_locs`: initial vertex locations
+    * `mask`: boolean mask for which vertices to relocate
 """
 @kwdef struct SpringLayout <: AbstractLayout
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
     α0::Float64 = 2.0  # initial moving speed
-    initial_locs = nothing
-    mask=nothing
+    meta::Dict{Symbol, Any} = Dict{Symbol, Any}()
 end
 
 function render_locs(graph, l::SpringLayout)
@@ -23,8 +23,8 @@ function render_locs(graph, l::SpringLayout)
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,
                         α0=l.α0,
-                        locs=l.initial_locs,
-                        mask=l.mask
+                        locs=get(l.meta, :initial_locs, nothing),
+                        mask=get(l.meta, :mask, nothing),
                     )
 end
 

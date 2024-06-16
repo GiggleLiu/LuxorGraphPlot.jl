@@ -163,7 +163,7 @@ function show_graph(f, g::GraphViz;
         padding_bottom = 10,
         config = GraphDisplayConfig(),
     )
-    diag = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
+    diag = diagram(g.locs, g.edges; vertex_shapes=g.vertex_shapes, vertex_sizes=g.vertex_sizes, config)
     with_nodes(diag; format, filename, padding_bottom, padding_left, padding_right, padding_top, background=config.background) do
         f(diag)
         show_diagram(diag; config,
@@ -222,19 +222,16 @@ function show_diagram(diag::GraphDiagram;
             vertex_text_colors,
             texts,
             edge_colors)
-    # edges
-    setline(config.edge_line_width)
-    setdash(config.edge_line_style)
-    for (k, e) in enumerate(diag.edges)
-        setcolor(_get(edge_colors, k, config.edge_color))
-        stroke(e)
-    end
-    # vertices
+    render_edges(diag.edges, config; edge_colors)
+    render_nodes(diag.nodes, config; texts, vertex_colors, vertex_stroke_colors, vertex_text_colors)
+end
+
+function render_nodes(nodes::AbstractVector, config::GraphDisplayConfig; texts=nothing, vertex_colors=nothing, vertex_stroke_colors=nothing, vertex_text_colors=nothing)
     setline(config.vertex_line_width)
     setdash(config.vertex_line_style)
     Luxor.fontsize(config.fontsize)
     !isempty(config.fontface) && Luxor.fontface(config.fontface)
-    for (i, node) in enumerate(diag.nodes)
+    for (i, node) in enumerate(nodes)
         setcolor(_get(vertex_colors, i, config.vertex_color))
         fill(node)
         setcolor(_get(vertex_stroke_colors, i, config.vertex_stroke_color))
@@ -246,6 +243,16 @@ function show_diagram(diag::GraphDiagram;
         end
     end
 end
+
+function render_edges(edges::AbstractVector, config::GraphDisplayConfig; edge_colors=nothing)
+    setline(config.edge_line_width)
+    setdash(config.edge_line_style)
+    for (k, e) in enumerate(edges)
+        setcolor(_get(edge_colors, k, config.edge_color))
+        stroke(e)
+    end
+end
+
 _get(::Nothing, i, default) = default
 _get(x, i, default) = x[i]
 
@@ -301,7 +308,7 @@ function show_gallery(f, stores::AbstractMatrix{GraphViz};
     Luxor.background(config.background)
     for i=1:m, j=1:n
         g = stores[i, j]
-        diag_ = diagram(g.locs, g.edges; g.vertex_shapes, g.vertex_sizes, config)
+        diag_ = diagram(g.locs, g.edges; vertex_shapes=g.vertex_shapes, vertex_sizes=g.vertex_sizes, config)
         diag = offset(diag_, (xoffsets[j], yoffsets[i]))
         f(diag)
         show_diagram(diag; config,
