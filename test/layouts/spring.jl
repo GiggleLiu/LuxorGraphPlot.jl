@@ -39,7 +39,7 @@ end
 
     # layered
     zlocs = rand([0,200], nv(graph))
-    layout = Layouts.SpringLayoutLayered(; zlocs, optimal_distance)
-    @test layout isa Layouts.SpringLayoutLayered
+    layout = Layouts.LayeredSpringLayout(; zlocs, optimal_distance)
+    @test layout isa Layouts.LayeredSpringLayout
     @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
 end

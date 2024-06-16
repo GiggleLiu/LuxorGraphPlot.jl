@@ -29,7 +29,7 @@ function render_locs(graph, l::SpringLayout)
 end
 
 """
-    SpringLayoutLayered <: AbstractLayout
+    LayeredSpringLayout <: AbstractLayout
 
 A layout algorithm based on a spring model for layered graphs.
 
@@ -40,7 +40,7 @@ A layout algorithm based on a spring model for layered graphs.
 * `α0::Float64`: the initial moving speed
 * `aspect_ratio::Float64`: the aspect ratio of the z-axis
 """
-@kwdef struct SpringLayoutLayered{T} <: AbstractLayout
+@kwdef struct LayeredSpringLayout{T} <: AbstractLayout
     zlocs::Vector{T}
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
@@ -48,7 +48,7 @@ A layout algorithm based on a spring model for layered graphs.
     aspect_ratio::Float64 = 0.2
 end
 
-function render_locs(graph, l::SpringLayoutLayered)
+function render_locs(graph, l::LayeredSpringLayout)
     return spring_layout_layered(graph, l.zlocs;
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,

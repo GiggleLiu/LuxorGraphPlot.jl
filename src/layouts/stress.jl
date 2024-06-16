@@ -31,7 +31,7 @@ function render_locs(graph, l::StressLayout)
 end
 
 """
-    StressLayoutLayered <: AbstractLayout
+    LayeredStressLayout <: AbstractLayout
 
 A layout algorithm based on stress majorization for layered graphs.
 
@@ -42,7 +42,7 @@ A layout algorithm based on stress majorization for layered graphs.
 * `rtol::Float64`: the absolute tolerance
 * `aspect_ratio::Float64`: the aspect ratio of the z-axis
 """
-@kwdef struct StressLayoutLayered{T} <: AbstractLayout
+@kwdef struct LayeredStressLayout{T} <: AbstractLayout
     zlocs::Vector{T}
     optimal_distance::Float64 = 50.0
     maxiter::Int = 100
@@ -50,7 +50,7 @@ A layout algorithm based on stress majorization for layered graphs.
     aspect_ratio::Float64 = 0.2
 end
 
-function render_locs(graph, l::StressLayoutLayered)
+function render_locs(graph, l::LayeredStressLayout)
     return stressmajorize_layout_layered(graph, l.zlocs;
                         optimal_distance=l.optimal_distance,
                         maxiter=l.maxiter,

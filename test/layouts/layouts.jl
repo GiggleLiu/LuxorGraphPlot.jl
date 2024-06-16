@@ -24,8 +24,8 @@ end
                 SpringLayout(),
                 StressLayout(),
                 SpectralLayout(),
-                StressLayoutLayered(zlocs=rand([0,200], nv(graph))),
-                SpringLayoutLayered(zlocs=rand([0,200], nv(graph))),
+                LayeredStressLayout(zlocs=rand([0,200], nv(graph))),
+                LayeredSpringLayout(zlocs=rand([0,200], nv(graph))),
             ]
         @test show_graph(graph, layout) isa Drawing
         gs = [GraphViz(graph, layout; vertex_sizes=rand(Bool, 10) .* 100, edge_colors=rand(RGB, 15)) for i=1:2, j=1:4]

@@ -1,6 +1,6 @@
 # API manual
 
 ```@autodocs
-Modules = [LuxorGraphPlot]
+Modules = [LuxorGraphPlot, LuxorGraphPlot.Layouts]
 Order   = [:function, :type]
 ```

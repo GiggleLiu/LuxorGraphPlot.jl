@@ -1,3 +1,8 @@
+"""
+    AbstractLayout
+
+Abstract type for layout algorithms.
+"""
 abstract type AbstractLayout end
 
 """

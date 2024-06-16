@@ -45,41 +45,41 @@ nodestore() do ns
 end
         
 # ## Connector styles
-# The following example does not work yet!
-# ```julia
-# nodestore() do ns
-# 	radius = 30
-#     a = boxnode(Point(50, 50), 40, 40; smooth=5)
-#     b = offset(a, (100, 0))
-#     groups = Matrix{Vector{Node}}(undef, 2, 3)
-#     for j=0:1
-#         for k = 0:2
-#             items = [offset(a, (200k, 150j)), offset(b, (200k, 150j))]
-#             groups[j+1, k+1] = items
-#             append!(ns, items)
-#         end
-#     end
-#     with_nodes() do
-#         fontsize(28)
-#         ## the default smooth method is "curve", it must take two control points.
-#         for (j, cps) in enumerate([[offset(midpoint(a, b), (0, 50))], [offset(a, (0, 50)), offset(b, (0, 50))]])
-#             for (k, smoothprops) in enumerate([
-#                     Dict(:method=>length(cps) == 1 ? "nosmooth" : "curve"),
-#                     Dict(:method=>"smooth", :radius=>10),
-#                     Dict(:method=>"bezier", :radius=>10),
-#                 ])
-#                 a, b = groups[j, k]
-#                 stroke(a)
-#                 stroke(b)
-#                 text("A", a)
-#                 text("B", b)
-#                 Connection(a, b; smoothprops, control_points=cps) |> stroke
-#                 @layer begin
-#                     fontsize(14)
-#                     text(string(get(smoothprops, :method, "")), offset(midpoint(a, b), (0, 70)))
-#                 end
-#             end
-#         end
-#     end
-# end
-# ```
+nodestore() do ns
+	radius = 30
+    a = boxnode(Point(50, 50), 40, 40; smooth=5)
+    b = offset(a, (100, 0))
+    groups = Matrix{Vector{Node}}(undef, 2, 3)
+    for j=0:1
+        for k = 0:2
+            items = [offset(a, (200k, 150j)), offset(b, (200k, 150j))]
+            groups[j+1, k+1] = items
+            append!(ns, items)
+            push!(ns, offset(midpoint(items...), (0, 70)))
+        end
+    end
+    with_nodes() do
+        fontsize(28)
+        ## the default smooth method is "curve", it must take two control points.
+        for j=1:2
+            for k = 1:3
+                a, b = groups[j, k]
+                cps  = [[offset(midpoint(a, b), (0, 50))], [offset(a, (0, 50)), offset(b, (0, 50))]][j]
+                smoothprops = [
+                    Dict(:method=>length(cps) == 1 ? "nosmooth" : "curve"),
+                    Dict(:method=>"smooth", :radius=>10),
+                    Dict(:method=>"bezier", :radius=>10),
+                ][k]
+                stroke(a)
+                stroke(b)
+                text("A", a)
+                text("B", b)
+                Connection(a, b; smoothprops, control_points=cps) |> stroke
+                @layer begin
+                    fontsize(14)
+                    text(string(get(smoothprops, :method, "")), offset(midpoint(a, b), (0, 70)))
+                end
+            end
+        end
+    end
+end

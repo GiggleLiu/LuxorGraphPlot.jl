@@ -128,7 +128,7 @@ Positional arguments
 -----------------------------
 * `f` is a function that returns extra `Luxor` plotting statements.
 * `graph` is a graph instance.
-* `locs` is a vector of tuples for specifying the vertex locations, or a [`Layout`](@ref) instance.
+* `locs` is a vector of tuples for specifying the vertex locations, or a [`AbstractLayout`](@ref) instance.
 
 Keyword arguments
 -----------------------------
