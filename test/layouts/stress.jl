@@ -35,6 +35,5 @@ end
     # layered
     zlocs = rand([0,200], nv(graph))
     layout = Layouts.LayeredStressLayout(; zlocs, optimal_distance)
-    @test layout isa Layouts.LayeredStressLayout
     @test Layouts.render_locs(graph, layout) isa Vector{<:Layouts.Point{2}}
 end
