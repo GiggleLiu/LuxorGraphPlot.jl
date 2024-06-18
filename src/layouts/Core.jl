@@ -19,6 +19,28 @@ function render_locs(graph::AbstractGraph, layout::AbstractVector)
     return Point.(layout)
 end
 
+"""
+    Layered <: AbstractLayout
+
+Layered version of a parent layout algorithm.
+
+### Fields
+* `parent::LT`: the parent layout algorithm
+* `zlocs::Vector{T}`: the z-axis locations
+* `aspect_ratio::Float64`: the aspect ratio of the z-axis
+"""
+struct Layered{LT<:AbstractLayout, T} <: AbstractLayout
+    parent::LT
+    zlocs::Vector{T}
+    aspect_ratio::Float64
+end
+
+function render_locs(graph, l::Layered)
+    @assert nv(graph) == length(l.zlocs) "The number of vertices in the graph must match the number of z-axis locations, got $(nv(graph)) vertices and $(length(l.zlocs)) z-axis locations"
+    locs = render_locs(graph, l.parent)
+    map(lz->Point(lz[1][1], lz[1][2]* l.aspect_ratio + lz[2]), zip(locs, l.zlocs))
+end
+
 struct LayoutQuality
     closeness::Float64
     mean_distance_deviation::Float64
