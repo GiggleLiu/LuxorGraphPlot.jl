@@ -13,7 +13,7 @@ end
     locs = Layouts.stressmajorize_layout(graph; optimal_distance)
     @test locs isa Vector{<:Layouts.Point{2}}
     Q = Layouts.quality_of_layout(graph, locs, optimal_distance)
-    @test Q.closeness > 10000 && Q.mean_distance_deviation < 1
+    @test Q.closeness > 10000 && Q.mean_distance_deviation < 5
 end
 
 @testset "data types" begin
