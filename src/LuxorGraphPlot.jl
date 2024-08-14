@@ -9,12 +9,12 @@ export Node, Connection, circlenode, ellipsenode, boxnode, polygonnode, dotnode,
 export NodeStore, nodestore, with_nodes
 export box!, circle!, polygon!, dot!, line!, stroke, ellipse!
 export GraphDisplayConfig, GraphViz
-export SpringLayout, StressLayout, SpectralLayout, render_locs, LayeredStressLayout, LayeredSpringLayout, AbstractLayout, Layred
+export SpringLayout, StressLayout, SpectralLayout, render_locs, LayeredStressLayout, LayeredSpringLayout, AbstractLayout, Layered, AestheticLayout
 export lighttheme!, darktheme!
 
 include("nodes.jl")
 include("layouts/layouts.jl")
-using .Layouts: SpringLayout, StressLayout, SpectralLayout, render_locs, LayeredStressLayout, LayeredSpringLayout, AbstractLayout, Layered
+using .Layouts: SpringLayout, StressLayout, SpectralLayout, render_locs, LayeredStressLayout, LayeredSpringLayout, AbstractLayout, Layered, AestheticLayout
 include("nodestore.jl")
 include("graphplot.jl")
 include("tnet.jl")
