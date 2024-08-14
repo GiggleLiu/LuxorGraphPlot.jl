@@ -20,7 +20,7 @@ nodestore() do ns  # store nodes in the nodestore (used to infer the bounding bo
     end
 end
 
-# ## Connection points
+# ## Connect points
 nodestore() do ns
     a1 = circle!((150, 150), 30)
     a2 = circle!((450, 150), 30)
@@ -38,7 +38,7 @@ nodestore() do ns
         end
         for b in box2s
             stroke(b)
-            line(a2, b; mode=:natural)
+            stroke(Connection(a2, b; mode=:natural, isarrow=true))
         end
         text("exact", a1)
         text("natural", a2)
