@@ -31,20 +31,20 @@ function loss_aesthetic(g::AbstractGraph, locs::Vector{Point{dimension, T}}) whe
         push!((has_edge(g, i, j) ? l1s : l2s), distance(locs[i], locs[j]))
     end
     angles = [edge_angle(locs[e.src], locs[e.dst]) for e in edges(g)]
-    l0 = -(mean(l2s) - mean(l1s)) * nv(g)
-    l1 = (std(l2s) + std(l1s)) * nv(g)
-    l2 = mean(inv.(1e-5 .+ abs.(l1s))) + mean(inv.(1e-5 .+ abs.(l2s)))   # no very close points
+    _mean(x) = isempty(x) ? zero(eltype(x)) : mean(x)
+    _std(x) = isempty(x) ? zero(eltype(x)) : std(x)
+    l0 = -(_mean(l2s) - _mean(l1s)) * nv(g)
+    l1 = (_std(l2s) + _std(l1s)) * nv(g)
+    l2 = _mean(inv.(1e-5 .+ abs.(l1s))) + _mean(inv.(1e-5 .+ abs.(l2s)))   # no very close points
     e1 = pseudo_l0_norm(angles)
     e2 = mean(d->pseudo_l0_norm(getindex.(locs, d)), 1:dimension)
-    #@show getfield.((l0, l1, l2, l3), :value)
-    #@show getfield.((e1, e2), :value)
     # TDOO: add vertex - edge repulsion term
-    return l0 + l1 + l2 + e1 + e2
+    return l0 + l1 + l2 + e1 + e2# + e3
 end
 
 function edge_angle(p1::Point{2, T}, p2::Point{2, T}) where T
     e1, e2 = normalize(p1), normalize(p2)
-    return max(min(dot(e1, e2), one(T)), T(-1))
+    return abs(dot(e1, e2))
 end
 
 function pseudo_l0_norm(xs::Vector{T}) where T
